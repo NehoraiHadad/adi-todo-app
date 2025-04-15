@@ -18,17 +18,17 @@ export default function LoginForm() {
         setError(result.error)
       }
     } catch (error) {
-      setError('An unexpected error occurred')
+      setError('אירעה שגיאה לא צפויה')
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <form action={handleSubmit} className="space-y-4">
+    <form action={handleSubmit} className="space-y-4 rtl">
       <div>
-        <label htmlFor="username" className="block text-sm font-medium mb-1">
-          Username
+        <label htmlFor="username" className="block text-sm font-medium mb-1 text-right">
+          שם משתמש
         </label>
         <input
           id="username"
@@ -36,13 +36,15 @@ export default function LoginForm() {
           type="text"
           autoComplete="username"
           required
-          className="w-full px-3 py-2 border rounded-md"
+          className="w-full px-3 py-2 border rounded-md text-right"
+          placeholder="הקלידו את שם המשתמש שלכם"
+          dir="rtl"
         />
       </div>
 
       <div>
-        <label htmlFor="password" className="block text-sm font-medium mb-1">
-          Password
+        <label htmlFor="password" className="block text-sm font-medium mb-1 text-right">
+          סיסמה
         </label>
         <input
           id="password"
@@ -50,12 +52,14 @@ export default function LoginForm() {
           type="password"
           autoComplete="current-password"
           required
-          className="w-full px-3 py-2 border rounded-md"
+          className="w-full px-3 py-2 border rounded-md text-right"
+          placeholder="הקלידו את הסיסמה שלכם"
+          dir="rtl"
         />
       </div>
 
       {error && (
-        <div className="text-red-500 text-sm">
+        <div className="text-red-500 text-sm text-right">
           {error}
         </div>
       )}
@@ -65,13 +69,13 @@ export default function LoginForm() {
         disabled={isLoading}
         className="w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
       >
-        {isLoading ? 'Signing in...' : 'Sign in'}
+        {isLoading ? 'מתחבר...' : 'התחברות'}
       </button>
 
       <div className="text-center text-sm mt-4">
-        Don&apos;t have an account?{' '}
+        אין לכם חשבון עדיין?{' '}
         <Link href="/signup" className="text-blue-600 hover:underline">
-          Sign up
+          הירשמו
         </Link>
       </div>
     </form>

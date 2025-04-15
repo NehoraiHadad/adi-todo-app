@@ -10,7 +10,7 @@ export async function signIn(formData: FormData) {
   const password = formData.get('password') as string
 
   if (!username || !password) {
-    return { error: 'Username and password are required' }
+    return { error: 'שם משתמש וסיסמה נדרשים' }
   }
 
   const supabase = await createActionClient()
@@ -52,7 +52,7 @@ export async function signIn(formData: FormData) {
         .single()
         
       if (profileError || !profileData?.email) {
-        return { error: 'Invalid username or password' }
+        return { error: 'שם משתמש או סיסמה שגויים' }
       }
       
       // Try login with the stored email
@@ -62,10 +62,10 @@ export async function signIn(formData: FormData) {
       })
       
       if (loginError) {
-        return { error: 'Invalid username or password' }
+        return { error: 'שם משתמש או סיסמה שגויים' }
       }
     } catch (err) {
-      return { error: 'Invalid username or password' }
+      return { error: 'שם משתמש או סיסמה שגויים' }
     }
   }
 
@@ -85,7 +85,7 @@ export async function signUp(formData: FormData) {
   const name = formData.get('name') as string
 
   if (!email || !password) {
-    return { error: 'Email and password are required' }
+    return { error: 'אימייל וסיסמה נדרשים' }
   }
 
   const supabase = await createActionClient()
@@ -108,7 +108,7 @@ export async function signUp(formData: FormData) {
   
   return { 
     success: true, 
-    message: 'Check your email for the confirmation link' 
+    message: 'בדוק את האימייל שלך לקבלת קישור האישור' 
   }
 }
 

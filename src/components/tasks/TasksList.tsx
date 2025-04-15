@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Task } from '@/types';
 import { tasksApi } from '@/services/api';
 import { useToast } from "@/components/ui/use-toast";
+import { formatDueDate } from '@/utils/dates';
 
 interface TasksListProps {
   initialTasks: Task[];
@@ -55,35 +56,15 @@ export const TasksList: React.FC<TasksListProps> = ({ initialTasks, userId }) =>
     return true;
   });
   
-  // Format due date for display
-  const formatDueDate = (task: Task) => {
-    if (!task.due_date) return '';
-    
-    const today = new Date();
-    const tomorrow = new Date();
-    tomorrow.setDate(today.getDate() + 1);
-    
-    const dueDate = new Date(task.due_date);
-    
-    if (dueDate.toDateString() === today.toDateString()) {
-      return 'היום';
-    } else if (dueDate.toDateString() === tomorrow.toDateString()) {
-      return 'מחר';
-    } else {
-      // Format the date in Hebrew style
-      return dueDate.toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric' });
-    }
-  };
-  
   return (
-    <Card className="mb-8 overflow-hidden border-2 border-indigo-200">
-      <CardHeader className="bg-indigo-50 pb-3 flex flex-row items-center justify-between">
-        <CardTitle className="text-2xl text-indigo-700">המשימות שלי</CardTitle>
-        <Button className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600">
+    <Card className="mb-8 overflow-hidden border-2 border-indigo-200 max-w-full sm:max-w-3xl mx-auto">
+      <CardHeader className="bg-indigo-50 pb-3 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <CardTitle className="text-xl sm:text-2xl text-indigo-700">המשימות שלי</CardTitle>
+        <Button size="sm" className="w-full sm:w-auto bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600">
           <span className="text-xl mr-1">+</span> משימה חדשה
         </Button>
       </CardHeader>
-      <CardContent className="bg-indigo-50 pt-0">
+      <CardContent className="bg-indigo-50 pt-0 px-2 sm:px-6">
         <Tabs 
           defaultValue="active" 
           value={tab} 
@@ -103,28 +84,38 @@ export const TasksList: React.FC<TasksListProps> = ({ initialTasks, userId }) =>
                   {filteredTasks.map(task => (
                     <li 
                       key={task.id} 
-                      className={`py-3 px-4 flex items-center justify-between group ${
+                      className={`py-3 px-3 sm:px-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 group ${
                         task.is_completed ? 'bg-green-50' : ''
                       }`}
                     >
                       <div className="flex items-center">
                         <div 
-                          className={`h-6 w-6 ${
+                          className={`h-6 w-6 flex-shrink-0 ${
                             task.is_completed ? 'bg-green-100' : 'bg-white'
                           } rounded-full flex items-center justify-center border-2 ${
                             task.is_completed ? 'border-green-300' : 'border-indigo-300'
                           } cursor-pointer ${
                             !task.is_completed ? 'group-hover:bg-indigo-100' : ''
-                          } transition-colors`}
+                          } transition-colors focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none`}
                           onClick={() => handleToggleTask(task)}
+                          role="checkbox"
+                          aria-checked={task.is_completed}
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              handleToggleTask(task);
+                            }
+                          }}
+                          aria-label={`Mark task "${task.title}" as ${task.is_completed ? 'not completed' : 'completed'}`}
                         >
                           {task.is_completed && (
-                            <svg className="h-4 w-4 text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <svg className="h-4 w-4 text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                             </svg>
                           )}
                         </div>
-                        <span className={`ms-3 text-lg ${
+                        <span className={`ms-3 text-md sm:text-lg break-words ${
                           task.is_completed ? 'line-through text-gray-500' : ''
                         }`}>
                           {task.title}
@@ -134,7 +125,7 @@ export const TasksList: React.FC<TasksListProps> = ({ initialTasks, userId }) =>
                       {task.due_date && (
                         <Badge 
                           variant="outline" 
-                          className={`${
+                          className={`self-start sm:self-center mt-1 sm:mt-0 ${
                             task.is_completed 
                               ? 'bg-green-100 text-green-800 border-green-200' 
                               : 'bg-indigo-100 text-indigo-800 border-indigo-200'
