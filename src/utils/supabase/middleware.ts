@@ -40,7 +40,8 @@ export async function updateSession(request: NextRequest) {
 
   // This will refresh the session if needed and set new cookies
   // Use getUser instead of getSession for more reliable session validation
-  const { data: { user }, error } = await supabase.auth.getUser()
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { data: { user: _user }, error: _error } = await supabase.auth.getUser()
   
   // If we detect we're coming from an auth-related action (login, signup, etc.)
   // make sure we get the latest session state

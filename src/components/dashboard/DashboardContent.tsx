@@ -23,7 +23,7 @@ type DashboardContentProps = {
   userId: string
 }
 
-export default function DashboardContent({ items, profile, userId }: DashboardContentProps) {
+export default function DashboardContent({ items }: DashboardContentProps) {
   const router = useRouter()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -50,8 +50,9 @@ export default function DashboardContent({ items, profile, userId }: DashboardCo
         setDescription('')
         router.refresh() // Refresh the page to show the new item
       }
-    } catch (err) {
-      setError('An unexpected error occurred')
+    } catch (_error) {
+      console.error('אירעה שגיאה לא צפויה', _error)
+      setError('An unexpected error occurred' )
     } finally {
       setLoading(false)
     }
@@ -69,7 +70,8 @@ export default function DashboardContent({ items, profile, userId }: DashboardCo
       } else {
         router.refresh() // Refresh the page to show the updated list
       }
-    } catch (err) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (_error) {
       setError('Failed to delete item')
     } finally {
       setLoading(false)

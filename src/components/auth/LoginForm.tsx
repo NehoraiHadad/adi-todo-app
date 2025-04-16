@@ -6,19 +6,20 @@ import Link from 'next/link'
 
 export default function LoginForm() {
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   async function handleSubmit(formData: FormData) {
     setIsLoading(true)
-    setError(null)
+    setErrorMessage(null)
 
     try {
       const result = await signIn(formData)
       if (result?.error) {
-        setError(result.error)
+        setErrorMessage(result.error)
       }
-    } catch (error) {
-      setError('אירעה שגיאה לא צפויה')
+    } catch (_error) {
+      setErrorMessage('אירעה שגיאה לא צפויה')
+      console.error('אירעה שגיאה לא צפויה', _error)
     } finally {
       setIsLoading(false)
     }
@@ -58,9 +59,9 @@ export default function LoginForm() {
         />
       </div>
 
-      {error && (
+      {errorMessage && (
         <div className="text-red-500 text-sm text-right">
-          {error}
+          {errorMessage}
         </div>
       )}
 

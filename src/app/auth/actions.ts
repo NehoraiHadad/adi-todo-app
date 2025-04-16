@@ -65,15 +65,13 @@ export async function signIn(formData: FormData) {
         return { error: 'שם משתמש או סיסמה שגויים' }
       }
     } catch (err) {
+      console.error('Error during fallback authentication:', err);
       return { error: 'שם משתמש או סיסמה שגויים' }
     }
   }
 
   // Force a revalidation of the entire layout to update auth state everywhere
   revalidatePath('/', 'layout')
-  
-  // Force a new redirect to trigger middleware for complete session refresh
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
   
   // Redirect to home page with a cache-busting query parameter
   redirect(`/?auth=${new Date().getTime()}`)

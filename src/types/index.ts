@@ -37,18 +37,22 @@ export interface ScheduleItem {
 
 export interface Task {
   id: string;
-  user_id: string;
-  title: string;
+  user_id?: string;
+  title?: string;
   description?: string;
   due_date?: string;
   due_time?: string;
-  is_completed: boolean;
+  is_completed?: boolean;
   priority?: string;
   tags?: string[];
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
   completed_at?: string;
-  is_shared: boolean;
+  is_shared?: boolean;
+  assigned_date?: string;
+  subject?: string;
+  type?: TaskType;
+  completed?: boolean;
 }
 
 export interface Schedule {

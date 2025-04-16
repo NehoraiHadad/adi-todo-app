@@ -63,8 +63,8 @@ export default function SignupForm() {
       // Redirect to login page or dashboard
       window.location.href = '/login'
       
-    } catch (error: any) {
-      setError(error.message)
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'אירעה שגיאה לא צפויה')
     } finally {
       setIsLoading(false)
     }

@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
-export async function POST(request: Request) {
+export async function POST() {
   // Create a direct Supabase client instead of using createRouteHandlerClient
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
@@ -15,7 +15,7 @@ export async function POST(request: Request) {
   });
   
   // Get the session token from cookie
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const accessToken = cookieStore.get('sb-access-token')?.value;
   
   if (!accessToken) {
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET(request: Request) {
+export async function GET() {
   // Create a direct Supabase client instead of using createRouteHandlerClient
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
@@ -106,7 +106,7 @@ export async function GET(request: Request) {
   });
   
   // Get the session token from cookie
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const accessToken = cookieStore.get('sb-access-token')?.value;
   
   if (!accessToken) {

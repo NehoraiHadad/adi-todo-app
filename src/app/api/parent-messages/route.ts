@@ -14,7 +14,8 @@ export async function GET(request: NextRequest) {
     // Parse query parameters
     const searchParams = request.nextUrl.searchParams;
     const unreadOnly = searchParams.get('unreadOnly') === 'true';
-    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')) : undefined;
+    const limitParam = searchParams.get('limit');
+    const limit = limitParam ? parseInt(limitParam) : undefined;
     
     // Build the query
     let query = supabase

@@ -16,7 +16,7 @@ export async function createClient() {
           try {
             cookieStore.set({ name, value, ...options })
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          } catch (error) {
+          } catch (_error) {
             // Unable to set cookie in server component or during static rendering
             // This is expected and can be ignored
           }
@@ -25,7 +25,7 @@ export async function createClient() {
           try {
             cookieStore.set({ name, value: '', ...options, maxAge: 0 })
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          } catch (error) {
+          } catch (_error) {
             // Unable to delete cookie in server component or during static rendering
             // This is expected and can be ignored
           }

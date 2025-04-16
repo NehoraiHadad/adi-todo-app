@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Card, CardContent } from "@/components/ui/card";
+import { Suspense } from 'react';
 
 import { createClient } from '@/utils/supabase/server';
 import { TasksList } from '@/components/tasks/TasksList';
@@ -7,6 +8,20 @@ import { MoodSelector } from '@/components/mood/MoodSelector';
 import { ParentMessageCard } from '@/components/messages/ParentMessageCard';
 import { TodaySchedule } from '@/components/schedule/TodaySchedule';
 import { Schedule, ParentMessage, Task } from '@/types';
+
+// Loading fallback component
+const LoadingFallback = () => (
+  <div className="p-4 text-center">
+    <div className="animate-pulse">טוען...</div>
+  </div>
+);
+
+// Client components wrapper with Suspense
+const SuspenseWrapper = ({ children }: { children: React.ReactNode }) => (
+  <Suspense fallback={<LoadingFallback />}>
+    {children}
+  </Suspense>
+);
 
 export default async function Home() {
   // Fetch the current user's information
@@ -88,17 +103,25 @@ export default async function Home() {
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         {/* Mood Selection Card */}
-        <MoodSelector userId={user?.id} />
+        <SuspenseWrapper>
+          <MoodSelector userId={user?.id} />
+        </SuspenseWrapper>
         
         {/* Message from Parents Card */}
-        <ParentMessageCard message={parentMessages[0]} userName={displayName} />
+        <SuspenseWrapper>
+          <ParentMessageCard message={parentMessages[0]} userName={displayName} />
+        </SuspenseWrapper>
         
         {/* Today's Schedule Card */}
-        <TodaySchedule schedules={todaySchedule} />
+        <SuspenseWrapper>
+          <TodaySchedule schedules={todaySchedule} />
+        </SuspenseWrapper>
       </div>
       
       {/* Daily Tasks Section */}
-      <TasksList initialTasks={tasks} userId={user?.id} />
+      <SuspenseWrapper>
+        <TasksList initialTasks={tasks} userId={user?.id} />
+      </SuspenseWrapper>
       
       {/* Navigation - Mobile */}
       <div className="fixed bottom-0 left-0 right-0 bg-white shadow-lg py-2 px-4 md:hidden border-t-2 border-indigo-100 z-50">

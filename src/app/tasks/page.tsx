@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { Task, TaskType } from '@/types';
-import { useAppStore } from '@/store';
 
 // Icons for subjects
 const subjectIcons: Record<string, { icon: string; color: string; bgColor: string }> = {
@@ -19,7 +18,8 @@ const subjectIcons: Record<string, { icon: string; color: string; bgColor: strin
 };
 
 // Get icon and colors for a subject
-const getSubjectStyle = (subject: string) => {
+const getSubjectStyle = (subject: string | undefined) => {
+  if (!subject) return { icon: '📝', color: 'text-gray-700', bgColor: 'bg-gray-100' };
   return subjectIcons[subject] || { icon: '📝', color: 'text-gray-700', bgColor: 'bg-gray-100' };
 };
 
@@ -125,7 +125,9 @@ export default function TasksPage() {
     return true;
   });
   
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return '';
+    
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('he-IL', {
       day: 'numeric',
@@ -133,7 +135,9 @@ export default function TasksPage() {
     }).format(date);
   };
   
-  const getIsOverdue = (dateString: string) => {
+  const getIsOverdue = (dateString: string | undefined) => {
+    if (!dateString) return false;
+    
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const taskDate = new Date(dateString);

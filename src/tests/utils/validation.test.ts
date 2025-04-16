@@ -4,11 +4,8 @@ import {
   isValidEmail,
   isValidNumber,
   isValidDate,
-  isFutureDate,
-  isInRange,
   validateTask,
   validateSchedule,
-  validateParentMessage
 } from '@/utils/validation';
 
 describe('בדיקות חברותיות למידע 🤔', () => {

@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
-export async function POST(request: Request) {
+export async function POST() {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // Apply profile policies
     const { error } = await supabase.rpc('apply_rls_policies');

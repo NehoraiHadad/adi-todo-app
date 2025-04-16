@@ -20,7 +20,18 @@ export async function GET(request: NextRequest) {
     // Handle request for all days at once
     if (allDays) {
       // Create a map to store schedules by day
-      const schedulesByDay: Record<number, any[]> = {
+      const schedulesByDay: Record<number, Array<{
+        id: string;
+        user_id: string;
+        day_of_week: number;
+        start_time: string;
+        end_time: string;
+        subject: string;
+        is_shared: boolean;
+        location?: string;
+        notes?: string;
+        created_at?: string;
+      }>> = {
         0: [], 1: [], 2: [], 3: [], 4: [], 5: []
       };
       
@@ -163,7 +174,7 @@ export async function DELETE(request: NextRequest) {
     }
     
     // Delete all schedules for this day and user
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('schedules')
       .delete()
       .eq('user_id', user.id)

@@ -1,14 +1,11 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
-interface ScheduleRouteParams {
-  params: {
-    id: string;
-  };
-}
-
 // DELETE /api/schedules/[id] - Delete a specific schedule item
-export async function DELETE(request: NextRequest, { params }: ScheduleRouteParams) {
+export async function DELETE(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -17,7 +14,8 @@ export async function DELETE(request: NextRequest, { params }: ScheduleRoutePara
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const { id } = await params;
+    const params = await context.params;
+    const { id } = params;
     
     // Check if the schedule item belongs to the user
     const { data: existingSchedule, error: fetchError } = await supabase
@@ -60,7 +58,10 @@ export async function DELETE(request: NextRequest, { params }: ScheduleRoutePara
 }
 
 // PATCH /api/schedules/[id] - Update a specific schedule item
-export async function PATCH(request: NextRequest, { params }: ScheduleRouteParams) {
+export async function PATCH(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -69,7 +70,8 @@ export async function PATCH(request: NextRequest, { params }: ScheduleRouteParam
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const { id } = await params;
+    const params = await context.params;
+    const { id } = params;
     const updates = await request.json();
     
     // Check if the schedule item belongs to the user

@@ -1,9 +1,9 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState, Suspense } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { createClient } from '@/utils/supabase/client';
-import { usePathname, useSearchParams, useRouter } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 
 // This defines what our auth system can do
 type AuthContextType = {
@@ -11,7 +11,10 @@ type AuthContextType = {
   session: Session | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, username: string) => Promise<{ error: Error | null, data: any | null }>;
+  signUp: (email: string, password: string, username: string) => Promise<{ 
+    error: Error | null, 
+    data: { user?: User | null } | null 
+  }>;
   signOut: () => Promise<void>;
   refreshSession: () => Promise<Session | null>;
 };
@@ -28,15 +31,45 @@ export const useAuth = () => {
   return context;
 };
 
+// Component that uses search params (needs Suspense)
+const AuthProviderWithSearchParams = ({ 
+  children, 
+  onPathChange
+}: { 
+  children: React.ReactNode,
+  onPathChange: (pathname: string, searchParams: URLSearchParams) => void
+}) => {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  
+  useEffect(() => {
+    if (pathname && searchParams) {
+      onPathChange(pathname, searchParams);
+    }
+  }, [pathname, searchParams, onPathChange]);
+  
+  return <>{children}</>;
+};
+
 // This is the main login system that keeps track of who is logged in
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [supabaseClient] = useState(() => createClient());
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const router = useRouter();
+
+  // Get the latest login information
+  const refreshSession = useCallback(async () => {
+    const { data } = await supabaseClient.auth.getSession();
+    setSession(data.session);
+    setUser(data.session?.user ?? null);
+    return data.session;
+  }, [supabaseClient]);
+
+  // Callback for when path or search params change
+  const handlePathChange = useCallback((_pathname: string, _searchParams: URLSearchParams) => {
+    refreshSession();
+  }, [refreshSession]);
 
   // This helps a user log in to their account
   const signIn = async (email: string, password: string) => {
@@ -59,6 +92,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       return { error: null };
     } catch (error) {
+      console.error('אירעה שגיאה לא צפויה', error)
       return { error: error instanceof Error ? error : new Error('Login failed') };
     }
   };
@@ -100,7 +134,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       if (!response.ok) {
-        const errorData = await response.json();
         throw new Error('Failed to sign out');
       }
       
@@ -110,25 +143,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Go back to the login page
       window.location.href = '/login';
-    } catch (error) {
+    } catch (_error) {
+      console.error('אירעה שגיאה לא צפויה', _error)
       // Even if there's a problem, try to go to the login page anyway
       window.location.href = '/login';
     }
   };
-
-  // Get the latest login information
-  const refreshSession = async () => {
-    const { data } = await supabaseClient.auth.getSession();
-    setSession(data.session);
-    setUser(data.session?.user ?? null);
-    return data.session;
-  };
-
-  // Check if the user is still logged in when they go to a new page
-  useEffect(() => {
-    refreshSession();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname, searchParams]);
 
   useEffect(() => {
     // Check if the user is logged in when the app starts
@@ -139,8 +159,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const { data } = await supabaseClient.auth.getSession();
         setSession(data.session);
         setUser(data.session?.user ?? null);
-      } catch (error) {
+      } catch (_error) {
         // If there's a problem, no one is logged in
+        console.error('אירעה שגיאה לא צפויה', _error)
       } finally {
         setLoading(false);
       }
@@ -173,7 +194,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Clean up when the app closes
       unsubscribe.then(fn => fn());
     };
-  }, [supabaseClient]);
+  }, [supabaseClient, refreshSession]);
 
   const value = {
     user,
@@ -185,5 +206,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     refreshSession,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      <Suspense fallback={null}>
+        <AuthProviderWithSearchParams onPathChange={handlePathChange}>
+          {children}
+        </AuthProviderWithSearchParams>
+      </Suspense>
+    </AuthContext.Provider>
+  );
 }; 

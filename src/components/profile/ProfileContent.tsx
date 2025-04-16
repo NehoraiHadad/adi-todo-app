@@ -23,7 +23,7 @@ type ProfileContentProps = {
   userId: string;
 }
 
-export default function ProfileContent({ initialProfile, userId }: ProfileContentProps) {
+export default function ProfileContent({ initialProfile }: ProfileContentProps) {
   const { user } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(initialProfile || null);
   const [editingEmail, setEditingEmail] = useState(false);
@@ -34,7 +34,7 @@ export default function ProfileContent({ initialProfile, userId }: ProfileConten
     e.preventDefault();
     
     if (!email || !email.includes('@')) {
-      toast.error('נא להזין כתובת דוא"ל תקינה');
+      toast.error('נא להזין כתובת דוא&quot;ל תקינה');
       return;
     }
     
@@ -62,9 +62,10 @@ export default function ProfileContent({ initialProfile, userId }: ProfileConten
       } else {
         toast.error('לא ניתן לעדכן אימייל, פרופיל לא נמצא');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to update email:', error);
-      toast.error(error.message || 'שגיאה בעדכון כתובת הדוא"ל');
+      const errorMessage = error instanceof Error ? error.message : 'שגיאה בעדכון כתובת הדוא&quot;ל';
+      toast.error(errorMessage);
     } finally {
       setSavingEmail(false);
     }

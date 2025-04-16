@@ -3,7 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Heebo } from 'next/font/google';
-import { createClient } from '@/utils/supabase/server';
 import { Toaster as ReactHotToastToaster } from 'react-hot-toast';
 import Navbar from "@/components/Navbar";
 import { AuthProvider } from "@/context/AuthContext";
@@ -34,9 +33,6 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  
   return (
     <html lang="he" dir="rtl">
       <body

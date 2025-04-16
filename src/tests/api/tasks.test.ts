@@ -1,6 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { GET, POST } from '@/app/api/tasks/route';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { PATCH, DELETE } from '@/app/api/tasks/[id]/route';
 
 // Mock the necessary dependencies
@@ -16,8 +18,22 @@ jest.mock('next/server', () => ({
 }));
 
 describe('בדיקות שמחות לניהול משימות 🎮', () => {
-  let mockSupabase: any;
-  let mockRequest: any;
+  let mockSupabase: {
+    auth: { getUser: jest.Mock };
+    from: jest.Mock;
+    select: jest.Mock;
+    insert: jest.Mock;
+    update: jest.Mock;
+    delete: jest.Mock;
+    eq: jest.Mock;
+    order: jest.Mock;
+    limit: jest.Mock;
+    single: jest.Mock;
+  };
+  let mockRequest: {
+    nextUrl: { searchParams: URLSearchParams };
+    json: jest.Mock;
+  };
 
   beforeEach(() => {
     // Reset mocks before each test
@@ -59,7 +75,7 @@ describe('בדיקות שמחות לניהול משימות 🎮', () => {
       });
       
       // Act
-      await GET(mockRequest);
+      await GET(mockRequest as unknown as NextRequest);
       
       // Assert
       expect(NextResponse.json).toHaveBeenCalledWith(
@@ -89,7 +105,7 @@ describe('בדיקות שמחות לניהול משימות 🎮', () => {
       }));
       
       // Act
-      await GET(mockRequest);
+      await GET(mockRequest as unknown as NextRequest);
       
       // Assert
       expect(mockSupabase.from).toHaveBeenCalledWith('tasks');
@@ -127,7 +143,7 @@ describe('בדיקות שמחות לניהול משימות 🎮', () => {
       }));
       
       // Act
-      await POST(mockRequest);
+      await POST(mockRequest as unknown as NextRequest);
       
       // Assert
       expect(mockSupabase.from).toHaveBeenCalledWith('tasks');
@@ -166,7 +182,7 @@ describe('בדיקות שמחות לניהול משימות 🎮', () => {
       }));
       
       // Act
-      await PATCH(mockRequest, { params: mockParams } as any);
+      await PATCH(mockRequest as unknown as NextRequest, { params: Promise.resolve(mockParams) } as { params: Promise<{ id: string }> });
       
       // Assert - Update expected error message to match actual implementation
       expect(NextResponse.json).toHaveBeenCalledWith(

@@ -334,11 +334,6 @@ export default function SchedulePage() {
     }
   };
 
-  // Original save schedule function now calls the save with data function
-  const saveSchedule = async () => {
-    return saveScheduleWithData(schedule);
-  };
-  
   // Event handlers
   const handleDayChange = (day: DayOfWeek) => {
     // Just update the selected day state - no data reloading needed
@@ -425,19 +420,6 @@ export default function SchedulePage() {
         setIsSaving(false);
       });
     }, 0);
-  };
-  
-  const handleSaveSchedule = async () => {
-    try {
-      setIsSaving(true);
-      await saveScheduleWithData(schedule);
-      setIsEditing(false);
-      setIsTimeEditing(false);
-    } catch (error) {
-      console.error('Error in handle save schedule:', error);
-    } finally {
-      setIsSaving(false);
-    }
   };
   
   if (isLoading) {

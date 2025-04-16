@@ -70,7 +70,7 @@ export const MoodSelector: React.FC<MoodSelectorProps> = ({ userId }) => {
         user_id: userId,
         mood_type: selectedMood,
         emoji: selectedMoodObj.emoji,
-        notes: notes.trim() || null
+        notes: notes.trim() || undefined
       };
       
       const result = await moodsApi.createMood(moodData);

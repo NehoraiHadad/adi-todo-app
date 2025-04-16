@@ -25,8 +25,11 @@ export const isValidEmail = (email: string | undefined | null): boolean => {
   return emailRegex.test(email!);
 };
 
+// Type for any value that could be a number
+type NumberValue = string | number | null | undefined;
+
 // בדיקה אם מספר תקין
-export const isValidNumber = (value: any): boolean => {
+export const isValidNumber = (value: NumberValue): boolean => {
   if (value === undefined || value === null) return false;
   return !isNaN(Number(value));
 };
@@ -53,8 +56,14 @@ export const isInRange = (value: number, min: number, max: number): boolean => {
   return value >= min && value <= max;
 };
 
+// Task interface
+interface TaskInput {
+  title?: string;
+  due_date?: string;
+}
+
 // פונקציה מרכזית לבדיקת משימה
-export const validateTask = (task: any): { isValid: boolean; errors: Record<string, string> } => {
+export const validateTask = (task: TaskInput): { isValid: boolean; errors: Record<string, string> } => {
   const errors: Record<string, string> = {};
 
   // חובה למלא כותרת
@@ -77,8 +86,16 @@ export const validateTask = (task: any): { isValid: boolean; errors: Record<stri
   };
 };
 
+// Schedule interface
+interface ScheduleInput {
+  title?: string;
+  day_of_week?: number | string;
+  start_time?: string;
+  end_time?: string;
+}
+
 // פונקציה מרכזית לבדיקת מערכת שעות
-export const validateSchedule = (schedule: any): { isValid: boolean; errors: Record<string, string> } => {
+export const validateSchedule = (schedule: ScheduleInput): { isValid: boolean; errors: Record<string, string> } => {
   const errors: Record<string, string> = {};
 
   // חובה למלא כותרת
@@ -107,7 +124,7 @@ export const validateSchedule = (schedule: any): { isValid: boolean; errors: Rec
 
   // בדיקה ששעת הסיום מאוחרת משעת ההתחלה
   if (isValidText(schedule?.start_time) && isValidText(schedule?.end_time)) {
-    if (schedule.start_time >= schedule.end_time) {
+    if (schedule.start_time! >= schedule.end_time!) {
       errors.end_time = 'שעת הסיום חייבת להיות מאוחרת משעת ההתחלה';
     }
   }
@@ -118,8 +135,14 @@ export const validateSchedule = (schedule: any): { isValid: boolean; errors: Rec
   };
 };
 
+// Message interface
+interface ParentMessageInput {
+  content?: string;
+  user_id?: string;
+}
+
 // פונקציה מרכזית לבדיקת הודעה מההורים
-export const validateParentMessage = (message: any): { isValid: boolean; errors: Record<string, string> } => {
+export const validateParentMessage = (message: ParentMessageInput): { isValid: boolean; errors: Record<string, string> } => {
   const errors: Record<string, string> = {};
 
   // חובה למלא תוכן להודעה

@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: Request) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const body = await request.json();
     
     const { id, display_name, email_notifications } = body;
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     }
     
     // Check if profile already exists
-    const { data: existingProfile, error: fetchError } = await supabase
+    const { data: existingProfile } = await supabase
       .from('profiles')
       .select('id')
       .eq('id', id)

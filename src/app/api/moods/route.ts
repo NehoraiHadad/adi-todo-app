@@ -13,7 +13,8 @@ export async function GET(request: NextRequest) {
     
     // Parse query parameters for filtering
     const searchParams = request.nextUrl.searchParams;
-    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')) : undefined;
+    const limitParam = searchParams.get('limit');
+    const limit = limitParam ? parseInt(limitParam) : undefined;
     const today = searchParams.get('today') === 'true';
     
     // Build the query

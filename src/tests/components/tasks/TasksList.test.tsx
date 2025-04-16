@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { TasksList } from '@/components/tasks/TasksList';
 import { tasksApi } from '@/services/api';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { formatDueDate } from '@/utils/dates';
 
 // Mock the tasksApi
@@ -141,7 +142,7 @@ describe('משימות שמחות - TasksList', () => {
     
     // Create a wrapper component to set the initial tab state
     const TestWrapper = () => {
-      const [tab, setTab] = React.useState('completed');
+      const [, setTab] = React.useState('completed');
       
       React.useEffect(() => {
         // Ensure the tab is set to 'completed' on mount

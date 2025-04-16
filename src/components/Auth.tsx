@@ -84,9 +84,9 @@ const AuthComponent: React.FC = () => {
         // Redirect to home
         router.push('/');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Auth error:', err);
-      setError(err.message);
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }

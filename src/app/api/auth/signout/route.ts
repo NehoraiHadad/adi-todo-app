@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     const supabase = await createClient()
     
@@ -18,9 +18,9 @@ export async function POST(request: NextRequest) {
       { success: true },
       { status: 200 }
     )
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json(
-      { error: 'An unexpected error occurred' },
+      { error: 'An unexpected error occurred' ,_error},
       { status: 500 }
     )
   }

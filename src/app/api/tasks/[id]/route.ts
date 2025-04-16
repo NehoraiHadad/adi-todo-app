@@ -1,14 +1,11 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
-interface TaskRouteParams {
-  params: {
-    id: string;
-  };
-}
-
 // GET /api/tasks/[id] - Get a specific task
-export async function GET(request: NextRequest, { params }: TaskRouteParams) {
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -17,6 +14,7 @@ export async function GET(request: NextRequest, { params }: TaskRouteParams) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
+    const params = await context.params;
     const { id } = params;
     
     const { data, error } = await supabase
@@ -47,7 +45,10 @@ export async function GET(request: NextRequest, { params }: TaskRouteParams) {
 }
 
 // PATCH /api/tasks/[id] - Update a specific task
-export async function PATCH(request: NextRequest, { params }: TaskRouteParams) {
+export async function PATCH(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -56,6 +57,7 @@ export async function PATCH(request: NextRequest, { params }: TaskRouteParams) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
+    const params = await context.params;
     const { id } = params;
     const updates = await request.json();
     
@@ -109,7 +111,10 @@ export async function PATCH(request: NextRequest, { params }: TaskRouteParams) {
 }
 
 // DELETE /api/tasks/[id] - Delete a specific task
-export async function DELETE(request: NextRequest, { params }: TaskRouteParams) {
+export async function DELETE(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -118,6 +123,7 @@ export async function DELETE(request: NextRequest, { params }: TaskRouteParams) 
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
+    const params = await context.params;
     const { id } = params;
     
     // Check if the task exists and belongs to the user
