@@ -29,6 +29,14 @@
 body {
   font-family: var(--font-heebo), Arial, Helvetica, sans-serif;
   font-size: 16px;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+/* Make all tappable elements have a minimum size for mobile */
+button, a, input[type="checkbox"], input[type="radio"] {
+  min-height: 44px;
+  min-width: 44px;
 }
 
 /* RTL overrides */
@@ -68,6 +76,19 @@ body {
     @apply hover:animate-bounce;
   }
   
+  /* Mobile responsive elements */
+  .mobile-touch-target {
+    @apply p-3 sm:p-2; /* Larger touch area on mobile */
+  }
+  
+  .mobile-text {
+    @apply text-lg sm:text-base; /* Larger text on mobile for readability */
+  }
+  
+  .mobile-spacing {
+    @apply py-4 px-3 sm:py-3 sm:px-4; /* More vertical space on mobile */
+  }
+  
   /* Custom checkbox styling */
   .custom-checkbox {
     @apply appearance-none h-6 w-6 border-2 border-indigo-300 rounded-full checked:bg-indigo-500 checked:border-indigo-500 focus:outline-none cursor-pointer transition-colors;
@@ -85,7 +106,21 @@ body {
   animation: float 3s ease-in-out infinite;
 }
 
-
+/* Mobile specific adjustments */
+@media (max-width: 640px) {
+  :root {
+    font-size: 18px; /* Slightly larger base font for mobile */
+  }
+  
+  input, select, textarea {
+    font-size: 16px !important; /* Prevent zoom on iOS */
+  }
+  
+  /* Fix for iOS 100vh issue */
+  .vh-fix {
+    height: calc(var(--vh, 1vh) * 100);
+  }
+}
 
 @layer base {
   :root {
@@ -115,6 +150,14 @@ body {
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
   }
+  
+  /* Fix for 100vh on mobile */
+  @supports (-webkit-touch-callout: none) {
+    .h-screen {
+      height: -webkit-fill-available;
+    }
+  }
+  
   .dark {
     --background: 0 0% 3.9%;
     --foreground: 0 0% 98%;
@@ -143,8 +186,6 @@ body {
   }
 }
 
-
-
 @layer base {
   * {
     @apply border-border;
@@ -152,4 +193,72 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Print styles for schedule */
+@media print {
+  @page {
+    size: portrait;
+    margin: 1cm;
+  }
+  
+  body {
+    background-color: white;
+    font-size: 12pt;
+  }
+  
+  .container-app {
+    max-width: 100%;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .print\:hidden {
+    display: none !important;
+  }
+  
+  .print\:block {
+    display: block !important;
+  }
+  
+  /* Schedule grid specific styles */
+  .schedule-grid-item {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  
+  /* Increase contrast for printed colors */
+  .text-gray-600 {
+    color: #000 !important;
+  }
+  
+  /* Remove animations and transitions */
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Hide scrollbar but keep scroll functionality */
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;             /* Chrome, Safari and Opera */
+}
+
+/* Day tabs adaptive styling */
+@media (min-width: 640px) {
+  /* Desktop and tablet styles */
+  .day-tab {
+    min-width: auto;
+    flex: 1;
+  }
+}
+
+/* Day tabs hover effect */
+.day-tab:hover:not(.day-tab-selected) {
+  background-color: rgba(0, 0, 0, 0.03);
 }

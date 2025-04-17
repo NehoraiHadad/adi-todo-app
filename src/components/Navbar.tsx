@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { useAuth } from '@/context/AuthContext';
 import { 
   Avatar,
@@ -71,13 +71,13 @@ export default function Navbar() {
   };
   
   return (
-    <nav className="bg-gradient-to-r from-indigo-400 to-purple-500 shadow-md border-b-4 border-yellow-300 text-white">
+    <nav className="bg-gradient-to-r from-indigo-400 to-purple-500 shadow-md border-b-4 border-yellow-300 text-white sticky top-0 z-50">
       <div className="container-app">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <Link href="/" className="flex-shrink-0 flex items-center">
               <span className="text-3xl">🏫</span>
-              <span className="text-2xl font-bold text-white ms-2">כיתה דיגיטלית</span>
+              <span className="text-xl sm:text-2xl font-bold text-white ms-2">כיתה דיגיטלית</span>
             </Link>
           </div>
           
@@ -101,7 +101,7 @@ export default function Navbar() {
             >
               <Link href="/schedule">
                 <span className="text-xl ml-1">📅</span>
-                מערכת שעות
+                מערכת לימודים
               </Link>
             </Button>
             
@@ -184,24 +184,24 @@ export default function Navbar() {
             {user && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Avatar className="cursor-pointer border-2 border-white mr-2">
+                  <Avatar className="cursor-pointer border-2 border-white mr-4">
                     <AvatarImage src="" alt={user.user_metadata?.display_name || user.email || 'User'} />
                     <AvatarFallback className="bg-yellow-400 text-indigo-700">
                       {getUserInitials()}
                     </AvatarFallback>
                   </Avatar>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuContent align="end" className="w-64">
                   <DropdownMenuLabel>החשבון שלי</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem>
-                    <Link href="/profile" className="w-full">הפרופיל שלי</Link>
+                    <Link href="/profile" className="w-full p-2">הפרופיל שלי</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem>
-                    <Link href="/settings" className="w-full">הגדרות</Link>
+                    <Link href="/settings" className="w-full p-2">הגדרות</Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut} className="text-red-600">
+                  <DropdownMenuItem onClick={handleSignOut} className="text-red-600 p-2">
                     התנתק
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -210,7 +210,7 @@ export default function Navbar() {
 
             <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-white hover:bg-indigo-300">
+                <Button variant="ghost" size="icon" className="text-white hover:bg-indigo-300 h-12 w-12 rounded-full">
                   {isMenuOpen ? (
                     <svg className="h-8 w-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -223,16 +223,15 @@ export default function Navbar() {
                   <span className="sr-only">פתח תפריט</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="bg-indigo-100 w-[240px] pt-8">
-                <SheetTitle className="sr-only">תפריט ניווט</SheetTitle>
-                <SheetDescription className="sr-only">תפריט ניווט לדפים השונים באתר</SheetDescription>
-                <div className="flex flex-col space-y-3">
+              <SheetContent side="right" className="bg-gradient-to-b from-indigo-100 to-purple-50 w-[280px] pt-10">
+                <SheetTitle className="text-2xl text-center text-indigo-700 mb-6">תפריט ניווט</SheetTitle>
+                <div className="flex flex-col space-y-4">
                   <Button 
                     asChild
                     variant={isActive('/') ? "default" : "ghost"}
-                    className={`justify-start text-lg font-medium ${
+                    className={`justify-start text-lg font-medium h-14 ${
                       isActive('/') 
-                        ? 'bg-indigo-500 text-white' 
+                        ? 'bg-indigo-500 text-white shadow-md' 
                         : 'text-indigo-700 hover:bg-indigo-200'
                     }`}
                   >
@@ -245,24 +244,24 @@ export default function Navbar() {
                   <Button 
                     asChild
                     variant={isActive('/schedule') ? "default" : "ghost"}
-                    className={`justify-start text-lg font-medium ${
+                    className={`justify-start text-lg font-medium h-14 ${
                       isActive('/schedule') 
-                        ? 'bg-indigo-500 text-white' 
+                        ? 'bg-indigo-500 text-white shadow-md' 
                         : 'text-indigo-700 hover:bg-indigo-200'
                     }`}
                   >
                     <Link href="/schedule">
                       <span className="text-xl ml-2">📅</span>
-                      מערכת שעות
+                      מערכת לימודים
                     </Link>
                   </Button>
                   
                   <Button 
                     asChild
                     variant={isActive('/tasks') ? "default" : "ghost"}
-                    className={`justify-start text-lg font-medium ${
+                    className={`justify-start text-lg font-medium h-14 ${
                       isActive('/tasks') 
-                        ? 'bg-indigo-500 text-white' 
+                        ? 'bg-indigo-500 text-white shadow-md' 
                         : 'text-indigo-700 hover:bg-indigo-200'
                     }`}
                   >
@@ -275,9 +274,9 @@ export default function Navbar() {
                   <Button 
                     asChild
                     variant={isActive('/equipment') ? "default" : "ghost"}
-                    className={`justify-start text-lg font-medium ${
+                    className={`justify-start text-lg font-medium h-14 ${
                       isActive('/equipment') 
-                        ? 'bg-indigo-500 text-white' 
+                        ? 'bg-indigo-500 text-white shadow-md' 
                         : 'text-indigo-700 hover:bg-indigo-200'
                     }`}
                   >
@@ -290,9 +289,9 @@ export default function Navbar() {
                   <Button 
                     asChild
                     variant={isActive('/rewards') ? "default" : "ghost"}
-                    className={`justify-start text-lg font-medium ${
+                    className={`justify-start text-lg font-medium h-14 ${
                       isActive('/rewards') 
-                        ? 'bg-indigo-500 text-white' 
+                        ? 'bg-indigo-500 text-white shadow-md' 
                         : 'text-indigo-700 hover:bg-indigo-200'
                     }`}
                   >
@@ -307,9 +306,9 @@ export default function Navbar() {
                     <Button 
                       asChild
                       variant={isActive('/login') ? "default" : "outline"}
-                      className={`justify-start text-lg font-medium ${
+                      className={`justify-start text-lg font-medium h-14 ${
                         isActive('/login') 
-                          ? 'bg-indigo-500 text-white' 
+                          ? 'bg-indigo-500 text-white shadow-md' 
                           : 'text-indigo-700 hover:bg-indigo-200 border-indigo-500'
                       }`}
                     >
@@ -324,7 +323,7 @@ export default function Navbar() {
                     <Button 
                       onClick={handleSignOut}
                       variant="outline"
-                      className="justify-start text-lg font-medium text-red-600 border-red-500 hover:bg-red-100"
+                      className="justify-start text-lg font-medium text-red-600 border-red-500 hover:bg-red-100 h-14"
                     >
                       <span className="text-xl ml-2">🚪</span>
                       התנתק

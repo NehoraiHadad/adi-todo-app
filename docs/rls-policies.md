@@ -46,7 +46,7 @@ CREATE POLICY "users_can_insert_own_tasks" ON tasks
     FOR INSERT WITH CHECK (auth.uid() = user_id);
 ```
 
-### טבלת מערכת שעות (`schedules`)
+### טבלת מערכת לימודים (`schedules`)
 
 ```sql
 -- משתמשים יכולים לראות את המערכת שלהם ומערכות משותפות של הכיתה

@@ -53,6 +53,10 @@ export interface Task {
   subject?: string;
   type?: TaskType;
   completed?: boolean;
+  
+  // Internal fields for UI
+  _originalTitle?: string;
+  _displayTitle?: string;
 }
 
 export interface Schedule {

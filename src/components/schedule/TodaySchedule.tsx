@@ -1,103 +1,131 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Schedule } from '@/types';
+import { TimeSlot } from './types';
+import { getCurrentHebrewDay, getHebrewDayName } from './utils';
+
+interface ApiScheduleItem {
+  subject: string;
+  start_time: string;
+  end_time: string;
+  // Add other potential fields if they exist
+}
+
+interface DisplayScheduleItem {
+  name: string;
+  icon: string;
+  color: string;
+  startTime: string;
+  endTime: string;
+}
 
 interface TodayScheduleProps {
-  schedules: Schedule[];
+  schedules?: ApiScheduleItem[];
+  _timeSlots?: TimeSlot[]; // Renamed from timeSlots
 }
 
 // Map of subject icons - can be expanded
 const SUBJECT_ICONS: Record<string, string> = {
-  'חשבון': '📏',
-  'מתמטיקה': '📏',
   'אנגלית': '🔤',
-  'מדעים': '🌱',
   'עברית': '📚',
-  'ספורט': '⚽',
-  'אמנות': '🎨',
-  'מוזיקה': '🎵',
-  'היסטוריה': '📜',
+  'חשבון': '📏',
+  'הלכה': '📕',
   'תנ"ך': '📖',
+  'מתמטיקה': '📐',
+  'חנ"ג': '⚽',
+  'תורה-עיון': '🕮',
+  'כישורי-חיים': '🧠',
+  'מדעים': '🌱',
+  'אמנות': '🎨',
+  'משנה': '📜',
+  'פרשת-שבוע': '🕯️',
+  'שישי-אישי': '🌟',
+  'מחשבים': '💻',
   'default': '📝'
 };
 
 // Map of subject colors
 const SUBJECT_COLORS: Record<string, string> = {
-  'חשבון': 'indigo',
-  'מתמטיקה': 'indigo',
-  'אנגלית': 'purple',
-  'מדעים': 'green',
-  'עברית': 'yellow',
-  'ספורט': 'red',
-  'אמנות': 'pink',
-  'מוזיקה': 'blue',
-  'היסטוריה': 'orange',
-  'תנ"ך': 'teal',
-  'default': 'gray'
+  'אנגלית': 'bg-purple-100 text-purple-800',
+  'עברית': 'bg-yellow-100 text-yellow-800',
+  'חשבון': 'bg-indigo-100 text-indigo-800',
+  'הלכה': 'bg-blue-100 text-blue-800',
+  'תנ"ך': 'bg-teal-100 text-teal-800',
+  'מתמטיקה': 'bg-indigo-100 text-indigo-800',
+  'חנ"ג': 'bg-orange-100 text-orange-800',
+  'תורה-עיון': 'bg-green-100 text-green-800',
+  'כישורי-חיים': 'bg-pink-100 text-pink-800',
+  'מדעים': 'bg-green-100 text-green-800',
+  'אמנות': 'bg-pink-100 text-pink-800',
+  'משנה': 'bg-amber-100 text-amber-800',
+  'פרשת-שבוע': 'bg-violet-100 text-violet-800',
+  'שישי-אישי': 'bg-rose-100 text-rose-800',
+  'מחשבים': 'bg-slate-100 text-slate-800',
+  'default': 'bg-gray-100 text-gray-800'
 };
 
-export const TodaySchedule: React.FC<TodayScheduleProps> = ({ schedules }) => {
-  // Format time for display (24-hour to 12-hour format)
-  const formatTime = (timeString: string) => {
-    if (!timeString) return '';
-    return timeString.substring(0, 5); // Just take HH:MM part
-  };
+/**
+ * Component to display today's schedule
+ */
+const TodaySchedule: React.FC<TodayScheduleProps> = ({ schedules = [], _timeSlots }) => {
+  const [currentHebrewDay] = useState<string>(getHebrewDayName(getCurrentHebrewDay()));
+  const [localSchedule, setLocalSchedule] = useState<DisplayScheduleItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   
-  // Get the day of week in Hebrew
-  const getDayOfWeekHebrew = () => {
-    const daysOfWeek = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
-    const today = new Date().getDay();
-    return daysOfWeek[today];
-  };
+  useEffect(() => {
+    if (schedules && schedules.length > 0) {
+      const formattedSchedules: DisplayScheduleItem[] = schedules.map(item => ({
+        name: item.subject,
+        icon: SUBJECT_ICONS[item.subject] || SUBJECT_ICONS['default'],
+        color: SUBJECT_COLORS[item.subject] || SUBJECT_COLORS['default'],
+        startTime: item.start_time,
+        endTime: item.end_time
+      }));
+
+      setLocalSchedule(formattedSchedules);
+      setLoading(false);
+      return;
+    }
+    
+    setLoading(false);
+  }, [schedules]);
   
-  // Get subject icon
-  const getSubjectIcon = (subject: string) => {
-    return SUBJECT_ICONS[subject] || SUBJECT_ICONS.default;
-  };
-  
-  // Get subject color
-  const getSubjectColor = (subject: string) => {
-    return SUBJECT_COLORS[subject] || SUBJECT_COLORS.default;
-  };
-  
-  // Sort the schedules by start time
-  const sortedSchedules = [...schedules].sort((a, b) => 
-    a.start_time.localeCompare(b.start_time)
-  );
+  if (loading) {
+    return <div className="text-center p-4">טוען מערכת לימודים...</div>;
+  }
   
   return (
     <Card className="shadow-md overflow-hidden border-2 border-blue-200 bg-blue-50">
       <CardHeader className="pb-2">
-        <CardTitle className="text-xl text-blue-700">מערכת לימודים - יום {getDayOfWeekHebrew()}</CardTitle>
+        <CardTitle className="text-xl text-blue-700">מערכת לימודים - יום {currentHebrewDay}</CardTitle>
       </CardHeader>
       <CardContent className="pt-2">
-        {sortedSchedules.length > 0 ? (
-          <ul className="space-y-2">
-            {sortedSchedules.map((schedule) => {
-              const color = getSubjectColor(schedule.subject);
-              return (
-                <li key={schedule.id} className={`p-2 bg-white rounded-md flex items-center border border-${color}-200`}>
-                  <Badge variant="outline" className={`mr-2 bg-${color}-100 text-${color}-700 p-1 h-8 w-8 flex items-center justify-center`}>
-                    <span className="text-xl">{schedule.subject_icon || getSubjectIcon(schedule.subject)}</span>
-                  </Badge>
-                  <span className="font-bold">{formatTime(schedule.start_time)}</span>
-                  <span className="mx-2">-</span>
-                  <span>{schedule.subject}</span>
-                  {schedule.room && (
-                    <span className="text-xs text-gray-600 ms-auto">חדר {schedule.room}</span>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
+        {localSchedule.length === 0 ? (
           <div className="text-center py-6 text-gray-500">
-            אין לימודים היום
+            אין שיעורים להיום
           </div>
+        ) : (
+          <ul className="space-y-2">
+            {localSchedule.map((subject, index) => (
+              <li key={index} className={`p-2 rounded-md ${subject.color}`}>
+                <div className="flex items-center justify-between">
+                  <span className="text-indigo-600 font-bold text-right">
+                    {subject.startTime?.substring(0, 5)} - {subject.endTime?.substring(0, 5)}
+                  </span>
+                  <div className="flex items-center">
+                    <span className="font-medium ml-2">{subject.name}</span>
+                    <span className="text-xl">{subject.icon}</span>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
         )}
       </CardContent>
     </Card>
   );
-}; 
+};
+
+export { TodaySchedule };
+export default TodaySchedule; 

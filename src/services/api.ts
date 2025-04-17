@@ -134,10 +134,11 @@ export const schedulesApi = {
     return await response.json();
   },
   
-  getAllSchedules: async (isShared?: boolean): Promise<Record<number, Schedule[]>> => {
+  getAllSchedules: async (isShared?: boolean, timestamp?: number): Promise<Record<number, Schedule[]>> => {
     const queryParams = new URLSearchParams();
     if (isShared !== undefined) queryParams.append('isShared', isShared.toString());
     queryParams.append('allDays', 'true');
+    if (timestamp) queryParams.append('t', timestamp.toString());
     
     const response = await fetch(`/api/schedules?${queryParams.toString()}`);
     if (!response.ok) {

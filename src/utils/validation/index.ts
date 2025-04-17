@@ -94,7 +94,7 @@ interface ScheduleInput {
   end_time?: string;
 }
 
-// פונקציה מרכזית לבדיקת מערכת שעות
+// פונקציה מרכזית לבדיקת מערכת לימודים
 export const validateSchedule = (schedule: ScheduleInput): { isValid: boolean; errors: Record<string, string> } => {
   const errors: Record<string, string> = {};
 

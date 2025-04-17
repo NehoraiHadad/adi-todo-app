@@ -1,25 +1,25 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { DayOfWeek } from '@/types';
-import { toast } from 'react-hot-toast';
 
-// Import components, types, and utilities
+// Import components and custom hooks
 import {
   DayTabs,
   ScheduleGrid,
   SubjectModal,
   Subject,
-  ScheduleData,
-  initialSchedule,
   getCurrentHebrewDay,
-  DEFAULT_TIME_SLOTS,
-  TimeSlot,
-  getSubjectByName,
-  getDayNumber
+  MobileNavDrawer,
+  // Import custom hooks
+  useScheduleData,
+  useSaveSchedule,
+  useScheduleEditing,
+  useKeyboardNavigation,
+  useUnsavedChangesWarning,
+  useMobileTouchFix,
+  useAdminCheck
 } from '@/components/schedule';
-import { schedulesApi } from '@/services/api';
-import { Schedule } from '@/types';
 import { Spinner } from '@/components/ui/Spinner';
 
 /**
@@ -27,464 +27,181 @@ import { Spinner } from '@/components/ui/Spinner';
  */
 export default function SchedulePage() {
   const [selectedDay, setSelectedDay] = useState<DayOfWeek>(getCurrentHebrewDay());
-  const [schedule, setSchedule] = useState<ScheduleData>(initialSchedule);
-  const [customTimeSlots, setCustomTimeSlots] = useState<TimeSlot[]>(DEFAULT_TIME_SLOTS);
-  const [isEditing, setIsEditing] = useState(false);
-  const [isTimeEditing, setIsTimeEditing] = useState(false);
-  const [editIndex, setEditIndex] = useState<number | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
   
-  // Load schedule data from API on initial render
-  useEffect(() => {
-    // Initial load - only happens once, don't show success toast for initial load
-    loadScheduleData(false);
-    
-    // Check if user is admin
-    const checkAdminStatus = async () => {
-      try {
-        const response = await fetch('/api/user/role');
-        if (response.ok) {
-          const data = await response.json();
-          setIsAdmin(data.role === 'admin');
-        }
-      } catch (error) {
-        console.error('Error checking admin status:', error);
-      }
-    };
-    
-    checkAdminStatus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Load custom time slots from localStorage if available
-  useEffect(() => {
-    const storedTimeSlots = localStorage.getItem('customTimeSlots');
-    if (storedTimeSlots) {
-      try {
-        const parsedTimeSlots = JSON.parse(storedTimeSlots);
-        if (Array.isArray(parsedTimeSlots) && parsedTimeSlots.length === 8) {
-          setCustomTimeSlots(parsedTimeSlots);
-        }
-      } catch (error) {
-        console.error('Error parsing stored time slots:', error);
-      }
-    }
-  }, []);
+  // Load data and hooks
+  const { isAdmin } = useAdminCheck();
   
-  // Load schedule data from the database
-  const loadScheduleData = async (showSuccessMessage = true) => {
-    try {
-      setIsLoading(true);
-      // Dismiss any existing toasts before creating a new one
-      toast.dismiss();
-      // Add a unique id to the toast so we can properly dismiss it
-      const loadingToastId = toast.loading('טוען מערכת שעות מהשרת...');
-      
-      // Create a new schedule data structure based on initialSchedule
-      const loadedSchedule: ScheduleData = { ...initialSchedule };
-      
-      // Clear all slots first to ensure clean loading
-      for (const day in DayOfWeek) {
-        if (isNaN(Number(day))) {
-          const dayEnum = DayOfWeek[day as keyof typeof DayOfWeek];
-          loadedSchedule[dayEnum] = Array(customTimeSlots.length).fill(null);
-        }
-      }
-      
-      console.log('=== Starting schedule load ===');
-      
-      // Get all schedules for all days in a single API call
-      const allSchedules = await schedulesApi.getAllSchedules(true);
-      console.log('Received all schedules in a single request:', allSchedules);
-      
-      // Process each day's schedules
-      for (const day in DayOfWeek) {
-        // Skip non-value properties of enum
-        if (isNaN(Number(day))) {
-          const dayEnum = DayOfWeek[day as keyof typeof DayOfWeek];
-          // Convert day name to day number (Sunday=0, Monday=1, etc.)
-          const dayNumber = getDayNumber(dayEnum);
-          
-          // Get schedules for this day from the response
-          const schedules = allSchedules[dayNumber] || [];
-          
-          if (schedules && schedules.length > 0) {
-            // Reset all slots for this day to null
-            loadedSchedule[dayEnum] = Array(customTimeSlots.length).fill(null);
-            
-            // Log for debugging
-            console.log(`Processing schedules for ${dayEnum} (day ${dayNumber}):`, schedules);
-            console.log('Available time slots:', customTimeSlots.map(slot => slot.startTime));
-            
-            // Fill in the slots with the data from the API
-            schedules.forEach(scheduleItem => {
-              // Find the time slot index based on start time
-              const timeString = scheduleItem.start_time.substring(0, 5); // Get HH:MM format
-              console.log(`Looking for time slot matching ${timeString} for ${scheduleItem.subject}`);
-              
-              // Normalize time formats for comparison
-              const normalizedTimeString = timeString.replace(/^0/, '');
-              
-              const slotIndex = customTimeSlots.findIndex(slot => {
-                // Compare with and without leading zeros
-                return slot.startTime.trim() === timeString.trim() || 
-                       slot.startTime.trim() === normalizedTimeString.trim();
-              });
-              
-              if (slotIndex !== -1) {
-                // Get the subject object based on name
-                const subject = getSubjectByName(scheduleItem.subject);
-                
-                if (subject) {
-                  console.log(`Found match at slot ${slotIndex} for ${scheduleItem.subject}`);
-                  loadedSchedule[dayEnum][slotIndex] = subject;
-                } else {
-                  console.warn(`Subject not found for name: ${scheduleItem.subject}`);
-                }
-              } else {
-                console.warn(`No matching time slot found for ${timeString}`);
-              }
-            });
-          } else {
-            console.log(`No schedules found for day ${dayNumber} (${day})`);
-          }
-        }
-      }
-      
-      console.log('Final loaded schedule:', loadedSchedule);
-      setSchedule(loadedSchedule);
-      // Dismiss the specific loading toast by ID
-      toast.dismiss(loadingToastId);
-      
-      // Only show success message if requested
-      if (showSuccessMessage) {
-        toast.success('מערכת השעות נטענה בהצלחה');
-      }
-    } catch (error) {
-      console.error('Error loading schedule data:', error);
-      // Dismiss all toasts to ensure cleanup
-      toast.dismiss();
-      toast.error('שגיאה בטעינת מערכת השעות');
-    } finally {
-      setIsLoading(false);
-    }
+  const {
+    schedule,
+    setSchedule,
+    customTimeSlots,
+    setCustomTimeSlots,
+    isLoading,
+    hasUnsavedChanges,
+    setHasUnsavedChanges,
+    timeChanges,
+    setTimeChanges,
+    loadScheduleData
+  } = useScheduleData();
+  
+  const {
+    isSaving,
+    saveScheduleWithData
+  } = useSaveSchedule(schedule, customTimeSlots, setHasUnsavedChanges, setTimeChanges);
+  
+  const {
+    isEditing,
+    setIsEditing,
+    isTimeEditing,
+    setIsTimeEditing,
+    editIndex,
+    handleEdit,
+    handleSubjectSelect: baseHandleSubjectSelect,
+    handleCancelEdit,
+    handleTimeEdit,
+    handleResetTimes
+  } = useScheduleEditing(
+    schedule, 
+    setSchedule, 
+    customTimeSlots, 
+    setCustomTimeSlots,
+    setHasUnsavedChanges,
+    setTimeChanges
+  );
+  
+  // Adapter for handleSubjectSelect to work with current selected day
+  const handleSubjectSelect = (subject: Subject | null) => {
+    baseHandleSubjectSelect(subject, selectedDay);
   };
   
-  // Modified save function that takes schedule data directly
-  const saveScheduleWithData = async (scheduleData = schedule) => {
-    try {
-      // More verbose logging for debugging
-      console.log('=== Starting schedule save ===');
-      console.log('Current selected day:', selectedDay);
-      console.log('Schedule data to save:', scheduleData);
-      console.log('Current time slots:', customTimeSlots);
-      
-      // Dismiss any existing toasts to prevent stacking
-      toast.dismiss();
-      const savingToastId = toast.loading('שומר מערכת שעות...');
-      
-      // Get the day number for the selected day
-      const dayNumber = getDayNumber(selectedDay);
-      console.log(`Saving schedule for day ${dayNumber} (${selectedDay})`);
-      
-      // Get current schedules for this day
-      let existingSchedules = [];
-      try {
-        // Use the cached data we already have if possible
-        const allSchedules = await schedulesApi.getSchedules(dayNumber, true);
-        existingSchedules = allSchedules;
-        console.log('Existing schedules from DB:', existingSchedules);
-      } catch (fetchError) {
-        console.error('Error fetching existing schedules:', fetchError);
-        toast.error('שגיאה בקבלת נתונים קיימים');
-        throw fetchError;
-      }
-      
-      // Create new schedule items or update existing ones for the selected day
-      const daySchedule = scheduleData[selectedDay];
-      
-      console.log('Current day schedule to save:', daySchedule);
-      
-      // Track which existing items were handled
-      const handledIds = new Set<string>();
-      const results = [];
-      
-      // Process each time slot one by one
-      for (let index = 0; index < daySchedule.length; index++) {
-        const subject = daySchedule[index];
-        // Get time from the customTimeSlots array
-        const timeSlot = customTimeSlots[index];
-        
-        // Find if there's an existing schedule item for this time slot
-        const existingItem = existingSchedules.find(item => {
-          const dbTimeString = item.start_time.substring(0, 5).trim();
-          const uiTimeString = timeSlot.startTime.trim();
-          console.log(`Comparing times: "${dbTimeString}" vs "${uiTimeString}"`);
-          return dbTimeString === uiTimeString;
-        });
-        
-        console.log(`Processing slot ${index} (${timeSlot.startTime}-${timeSlot.endTime}):`);
-        console.log('- Subject:', subject?.name || 'None');
-        console.log('- Existing item:', existingItem?.id || 'None');
-        
-        try {
-          if (subject) {
-            // Create a schedule object for the API
-            const scheduleItem: Partial<Schedule> = {
-              day_of_week: dayNumber,
-              start_time: timeSlot.startTime.padStart(5, '0'),
-              end_time: timeSlot.endTime.padStart(5, '0'),
-              subject: subject.name,
-              subject_icon: subject.icon,
-              is_shared: true // Changed to true to make schedules shared by default (class-wide)
-            };
-            
-            console.log('Schedule item to save:', scheduleItem);
-            
-            if (existingItem) {
-              // Mark as handled
-              handledIds.add(existingItem.id);
-              // Update existing item
-              console.log(`Updating schedule item ${existingItem.id} with:`, scheduleItem);
-              try {
-                const result = await schedulesApi.updateSchedule(existingItem.id, scheduleItem);
-                console.log('Update result:', result);
-                results.push(result);
-              } catch (updateError) {
-                console.error(`Error updating schedule at slot ${index}:`, updateError);
-                // Don't throw the error, just log it and continue
-                toast.error(`שגיאה בעדכון שיעור בשעה ${timeSlot.startTime}`);
-              }
-            } else {
-              // Create new item - Double check time format
-              console.log('Creating new schedule item with exact times:', {
-                start: scheduleItem.start_time || '',
-                end: scheduleItem.end_time || '',
-                formatted_start: (scheduleItem.start_time || '').padStart(5, '0'),
-                formatted_end: (scheduleItem.end_time || '').padStart(5, '0')
-              });
-              
-              // Ensure proper time format with padding
-              scheduleItem.start_time = (scheduleItem.start_time || '').padStart(5, '0');
-              scheduleItem.end_time = (scheduleItem.end_time || '').padStart(5, '0');
-              
-              try {
-                const result = await schedulesApi.createSchedule(scheduleItem);
-                console.log('Create result:', result);
-                results.push(result);
-              } catch (createError) {
-                console.error(`Error creating schedule at ${scheduleItem.start_time}:`, createError);
-                // Don't throw the error, just log it and continue
-                toast.error(`שגיאה ביצירת שיעור בשעה ${timeSlot.startTime}`);
-              }
-            }
-          } else if (existingItem) {
-            // Mark as handled
-            handledIds.add(existingItem.id);
-            // If slot is now empty but an item exists, delete it
-            try {
-              console.log(`Deleting schedule item ${existingItem.id}`);
-              await schedulesApi.deleteSchedule(existingItem.id);
-              console.log('Delete successful');
-            } catch (deleteError) {
-              console.error(`Error deleting schedule item ${existingItem.id}:`, deleteError);
-              // Don't throw the error, just log it and continue
-              toast.error(`שגיאה במחיקת שיעור בשעה ${timeSlot.startTime}`);
-            }
-          }
-        } catch (slotError) {
-          console.error(`Error processing time slot ${index}:`, slotError);
-          // Continue processing other slots even if one fails
-          continue;
-        }
-      }
-      
-      // Delete any existing items that weren't handled (they're no longer in the schedule)
-      const unusedItems = existingSchedules.filter(item => !handledIds.has(item.id));
-      console.log('Unused items to delete:', unusedItems);
-      
-      if (unusedItems.length > 0) {
-        for (const item of unusedItems) {
-          try {
-            console.log(`Deleting unused item ${item.id}`);
-            await schedulesApi.deleteSchedule(item.id);
-            console.log(`Successfully deleted item ${item.id}`);
-          } catch (error) {
-            console.error(`Error deleting unused item ${item.id}:`, error);
-            throw error;
-          }
-        }
-      }
-      
-      // Save customTimeSlots to localStorage
-      localStorage.setItem('customTimeSlots', JSON.stringify(customTimeSlots));
-      
-      console.log('Schedule saved successfully:', results);
-      
-      // Dismiss the saving toast and show success message
-      toast.dismiss(savingToastId);
-      toast.success('מערכת השעות נשמרה בהצלחה', { duration: 2000 });
-    } catch (error) {
-      console.error('Error saving schedule:', error);
-      // Dismiss any existing toasts
-      toast.dismiss();
-      toast.error('שגיאה בשמירת מערכת השעות');
-    }
-  };
-
-  // Event handlers
+  // Day change handler
   const handleDayChange = (day: DayOfWeek) => {
-    // Just update the selected day state - no data reloading needed
     setSelectedDay(day);
     console.log(`Switched view to ${day} day without reloading data`);
   };
   
-  const handleEdit = (slotIndex: number) => {
-    setIsEditing(true);
-    setEditIndex(slotIndex);
+  // Save changes handler
+  const handleSaveChanges = () => {
+    saveScheduleWithData(selectedDay);
   };
   
-  const handleSubjectSelect = (subject: Subject | null) => {
-    if (editIndex !== null) {
-      // Create updated schedule
-      const updatedSchedule = {
-        ...schedule,
-        [selectedDay]: schedule[selectedDay].map((slot, idx) => 
-          idx === editIndex ? subject : slot
-        ),
-      };
-      
-      // Update state
-      setSchedule(updatedSchedule);
-      setEditIndex(null);
-      
-      // Show temporary change message - dismiss any existing toasts first
-      toast.dismiss();
-      toast.success(subject ? 'השיעור נוסף/עודכן' : 'השיעור הוסר', { duration: 1500 });
-      
-      // Wait for a tick to ensure React has processed the state update
-      setTimeout(() => {
-        // Automatically save with the updated schedule data
-        setIsSaving(true);
-        saveScheduleWithData(updatedSchedule).finally(() => {
-          setIsSaving(false);
-        });
-      }, 0);
-    }
-  };
-
-  const handleCancelEdit = () => {
-    setIsEditing(false);
-    setEditIndex(null);
-  };
+  // Initialize hooks
+  useKeyboardNavigation(
+    selectedDay,
+    setSelectedDay,
+    isAdmin,
+    isEditing,
+    isTimeEditing,
+    setIsEditing,
+    setIsTimeEditing,
+    hasUnsavedChanges,
+    timeChanges,
+    handleSaveChanges
+  );
   
-  const handleTimeEdit = (slotIndex: number, changes: Partial<TimeSlot>) => {
-    // Create a new timeSlots array with the updated changes
-    const updatedTimeSlots = customTimeSlots.map((slot, idx) => 
-      idx === slotIndex ? { ...slot, ...changes } : slot
-    );
-    
-    // Update state
-    setCustomTimeSlots(updatedTimeSlots);
-    
-    // Show short confirmation toast - dismiss any existing toasts first
-    toast.dismiss();
-    toast.success('זמני השיעורים עודכנו', { duration: 1500 });
-    
-    // Wait for a tick to ensure React has processed the state update
-    setTimeout(() => {
-      // Automatically save with the current schedule data but updated time slots
-      setIsSaving(true);
-      saveScheduleWithData(schedule).finally(() => {
-        setIsSaving(false);
-      });
-    }, 0);
-  };
-
-  const handleResetTimes = () => {
-    // Update state
-    setCustomTimeSlots(DEFAULT_TIME_SLOTS);
-    localStorage.removeItem('customTimeSlots');
-    
-    // Show confirmation message - dismiss any existing toasts first
-    toast.dismiss();
-    toast.success('זמני השיעורים אופסו', { duration: 1500 });
-    
-    // Wait for a tick to ensure React has processed the state update
-    setTimeout(() => {
-      // Automatically save changes with the updated time slots
-      setIsSaving(true);
-      saveScheduleWithData(schedule).finally(() => {
-        setIsSaving(false);
-      });
-    }, 0);
-  };
+  useUnsavedChangesWarning(hasUnsavedChanges, timeChanges);
+  useMobileTouchFix();
   
   if (isLoading) {
     return (
       <div className="container-app py-6 flex flex-col items-center justify-center min-h-[60vh]">
         <Spinner size="lg" />
-        <p className="mt-4 text-gray-600">טוען מערכת שעות...</p>
+        <p className="mt-4 text-gray-600">טוען מערכת לימודים...</p>
       </div>
     );
   }
   
   return (
-    <div className="container-app py-6">
-      {/* Header with editing button */}
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-indigo-600">מערכת שעות שבועית</h1>
-        <div className="flex gap-2">
+    <div className="container-app py-2 sm:py-6 print:py-0">
+      {/* Header with editing button - hidden in print mode */}
+      <div className="flex justify-between items-center mb-2 sm:mb-6 print:hidden">
+        <h1 className="text-lg sm:text-3xl font-bold text-indigo-600 text-right mb-0">
+          <span className="hidden sm:inline">מערכת לימודים שבועית</span>
+          <span className="sm:hidden">מערכת לימודים</span>
+        </h1>
+        <div className="flex flex-wrap justify-end gap-1 sm:gap-2">
+          {/* Edit/Time editing mode buttons */}
           {isEditing || isTimeEditing ? (
             <>
               {isSaving && (
-                <div className="flex items-center text-gray-600 mr-2">
+                <div className="hidden sm:flex items-center text-gray-600 mr-2 text-sm">
                   <Spinner className="mr-2" size="sm" />
                   <span>שומר שינויים...</span>
                 </div>
               )}
+              {/* Mobile-only spinner for saving */}
+              {isSaving && (
+                <div className="sm:hidden flex items-center text-gray-600 mr-1 text-xs">
+                  <Spinner className="mr-1" size="sm" />
+                </div>
+              )}
+              {(hasUnsavedChanges || timeChanges) && (
+                <button
+                  className="btn bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600 flex items-center text-xs sm:text-sm px-2 py-1 sm:px-4 sm:py-2 rounded-md sm:rounded-lg shadow-md"
+                  onClick={handleSaveChanges}
+                  disabled={isSaving}
+                  aria-label="שמור שינויים"
+                  title="ניתן גם ללחוץ על S לשמירה"
+                >
+                  <span className="text-base sm:text-lg mr-1 sm:mr-2">💾</span>
+                  <span className="whitespace-nowrap sm:inline hidden">שמור שינויים</span>
+                  <span className="whitespace-nowrap sm:hidden">שמור</span>
+                </button>
+              )}
               <button
-                className="btn bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600 flex items-center"
+                className="btn bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600 items-center text-xs sm:text-sm px-2 py-1 sm:px-4 sm:py-2 rounded-md sm:rounded-lg shadow-md"
                 onClick={() => {
+                  // Ask for confirmation if there are unsaved changes
+                  if (hasUnsavedChanges || timeChanges) {
+                    if (window.confirm('יש לך שינויים שלא נשמרו. האם ברצונך לשמור אותם לפני היציאה ממצב עריכה?')) {
+                      handleSaveChanges();
+                    }
+                  }
                   setIsEditing(false);
                   setIsTimeEditing(false);
                 }}
+                aria-label="סיום עריכה"
+                title="ניתן גם ללחוץ על Escape ליציאה ממצב עריכה"
               >
-                <span className="text-xl mr-2">🔒</span>
-                סיום עריכה
+                <span className="text-base sm:text-lg mr-1 sm:mr-2">🔒</span>
+                <span className="whitespace-nowrap sm:inline hidden">סיום עריכה</span>
+                <span className="whitespace-nowrap sm:hidden">סיום</span>
               </button>
             </>
           ) : (
+            // View mode buttons - only on larger screens
             <>
               <button
-                className="btn bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600 flex items-center"
+                className="btn bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600 items-center text-sm sm:text-base px-3 py-2 sm:px-4 sm:py-2 rounded-lg shadow-md hidden sm:flex"
                 onClick={() => loadScheduleData(true)}
                 title="רענן את המערכת רק כאשר יש שינויים בשרת או אם המערכת לא נטענה כראוי"
+                aria-label="רענון נתונים"
               >
-                <span className="text-xl mr-2">🔄</span>
-                רענון נתונים
+                <span className="text-lg sm:text-xl mr-1 sm:mr-2">🔄</span>
+                <span className="whitespace-nowrap">רענון נתונים</span>
               </button>
               {isAdmin ? (
                 <>
                   <button
-                    className="btn bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600 flex items-center"
+                    className="btn bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600 items-center text-sm sm:text-base px-3 py-2 sm:px-4 sm:py-2 rounded-lg shadow-md hidden sm:flex"
                     onClick={() => setIsEditing(true)}
+                    aria-label="ערוך מערכת לימודים"
+                    title="ניתן גם ללחוץ על מקש E להתחלת עריכה"
                   >
-                    <span className="text-xl mr-2">🔓</span>
-                    ערוך מערכת
+                    <span className="text-lg sm:text-xl mr-1 sm:mr-2">🔓</span>
+                    <span className="whitespace-nowrap">ערוך מערכת</span>
                   </button>
                   <button
-                    className="btn bg-gradient-to-r from-yellow-500 to-amber-500 text-white hover:from-yellow-600 hover:to-amber-600 flex items-center"
+                    className="hidden sm:flex btn bg-gradient-to-r from-yellow-500 to-amber-500 text-white hover:from-yellow-600 hover:to-amber-600 items-center text-sm sm:text-base px-3 py-2 sm:px-4 sm:py-2 rounded-lg shadow-md"
                     onClick={() => setIsTimeEditing(true)}
+                    aria-label="ערוך זמני שיעורים"
                   >
-                    <span className="text-xl mr-2">⏱️</span>
-                    ערוך זמנים
+                    <span className="text-lg sm:text-xl mr-1 sm:mr-2">⏱️</span>
+                    <span className="whitespace-nowrap">ערוך זמנים</span>
                   </button>
                 </>
               ) : (
-                <div className="text-gray-500 italic px-2">
+                <div className="text-gray-500 italic px-2 text-sm hidden sm:block">
                   רק למורים או להורים יש הרשאות עריכה
                 </div>
               )}
@@ -493,24 +210,40 @@ export default function SchedulePage() {
         </div>
       </div>
       
+      {/* Print mode header */}
+      <div className="hidden print:block mb-4 text-center">
+        <h1 className="text-2xl font-bold text-black">מערכת לימודים שבועית - {selectedDay}</h1>
+        <p className="text-sm text-gray-600">הודפס בתאריך {new Date().toLocaleDateString('he-IL')}</p>
+      </div>
+      
+      {/* Unsaved changes notification */}
+      {(hasUnsavedChanges || timeChanges) && (isEditing || isTimeEditing) && (
+        <div className="mb-4 p-2 bg-yellow-100 border border-yellow-300 rounded-md text-yellow-800 flex items-center text-sm sm:text-base print:hidden">
+          <span className="text-lg sm:text-xl mr-1 sm:mr-2">📝</span>
+          יש לך שינויים שלא נשמרו. לחץ על "שמור שינויים" כדי לשמור את השינויים שביצעת.
+        </div>
+      )}
+      
       {/* Time editing controls */}
       {isTimeEditing && (
-        <div className="mb-4 flex justify-end">
+        <div className="mb-4 flex justify-end print:hidden">
           <button
-            className="btn bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md flex items-center"
+            className="btn bg-red-500 hover:bg-red-600 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg shadow-md flex items-center text-sm sm:text-base"
             onClick={handleResetTimes}
           >
-            <span className="text-xl mr-2">🔄</span>
+            <span className="text-lg sm:text-xl mr-1 sm:mr-2">🔄</span>
             אפס זמנים לברירת מחדל
           </button>
         </div>
       )}
       
-      {/* Day tabs */}
-      <DayTabs 
-        selectedDay={selectedDay} 
-        onDayChange={handleDayChange} 
-      />
+      {/* Day tabs - hidden in print mode */}
+      <div className="print:hidden">
+        <DayTabs 
+          selectedDay={selectedDay} 
+          onDayChange={handleDayChange} 
+        />
+      </div>
       
       {/* Schedule grid */}
       <ScheduleGrid
@@ -521,6 +254,8 @@ export default function SchedulePage() {
         isTimeEditing={isTimeEditing}
         onEdit={handleEdit}
         onTimeEdit={handleTimeEdit}
+        _isAdmin={isAdmin}
+        _setIsEditing={setIsEditing}
       />
       
       {/* Subject selection modal */}
@@ -531,8 +266,42 @@ export default function SchedulePage() {
         />
       )}
       
-      {/* Add extra padding for mobile bottom nav */}
-      <div className="h-16 md:hidden"></div>
+      {/* Mobile feature tooltip - only visible on smaller screens */}
+      <div className="md:hidden text-xs text-gray-500 text-center mt-2 mb-4 print:hidden">
+        <p>לחץ על שיעור כדי להציג פרטים נוספים</p>
+      </div>
+      
+      {/* Mobile Navigation Drawer */}
+      <MobileNavDrawer
+        _selectedDay={selectedDay}
+        isAdmin={isAdmin}
+        isEditing={isEditing}
+        isTimeEditing={isTimeEditing}
+        hasUnsavedChanges={hasUnsavedChanges || timeChanges}
+        onRefresh={() => loadScheduleData(true)}
+        onEdit={() => {
+          if (isEditing) {
+            setIsEditing(false);
+          } else {
+            setIsEditing(true);
+            setIsTimeEditing(false);
+          }
+        }}
+        onEditTimes={() => {
+          if (isTimeEditing) {
+            setIsTimeEditing(false);
+          } else {
+            setIsTimeEditing(true);
+            setIsEditing(false);
+          }
+        }}
+        onSave={handleSaveChanges}
+        _onDayChange={handleDayChange}
+        onPrint={() => window.print()}
+      />
+      
+      {/* Smaller mobile bottom padding to accommodate new floating button position */}
+      <div className="h-16 md:hidden print:hidden"></div>
     </div>
   );
 } 
