@@ -73,6 +73,7 @@ export interface Schedule {
   created_at: string;
   updated_at: string;
   is_shared: boolean;
+  slot_index?: number;
 }
 
 export interface Mood {

@@ -1,5 +1,5 @@
 import { DayOfWeek } from '@/types';
-import { Subject, subjects } from './types';
+import { Subject, subjects } from '@/types/schedule';
 
 /**
  * Get the current Hebrew day of the week
@@ -51,7 +51,7 @@ export function getDayColors() {
  * Get a subject object by its name
  */
 export function getSubjectByName(name: string): Subject | null {
-  const subject = subjects.find(s => s.name === name);
+  const subject = subjects.find((s: Subject) => s.name === name);
   return subject || null;
 }
 

@@ -7,7 +7,10 @@ import { TasksList } from '@/components/tasks/TasksList';
 import { MoodSelector } from '@/components/mood/MoodSelector';
 import { ParentMessageCard } from '@/components/messages/ParentMessageCard';
 import { TodaySchedule } from '@/components/schedule/TodaySchedule';
-import { Schedule, ParentMessage, Task } from '@/types';
+import { ParentMessage, Task } from '@/types';
+import { ScheduleSlot } from '@/types/schedule';
+import { fetchProcessedScheduleData } from '@/server/schedule/queries';
+import { getCurrentHebrewDay } from '@/components/schedule/utils';
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -47,21 +50,19 @@ export default async function Home() {
   }
   
   // Fetch data for components
-  let todaySchedule: Schedule[] = [];
+  let slotsForToday: ScheduleSlot[] = [];
   let tasks: Task[] = [];
   let parentMessages: ParentMessage[] = [];
   
   if (user) {
-    // Fetch today's schedule
-    const { data: scheduleData, error: scheduleError } = await supabase
-      .from('schedules')
-      .select('*')
-      .eq('day_of_week', new Date().getDay())
-      .or(`user_id.eq.${user.id},is_shared.eq.true`)
-      .order('start_time', { ascending: true });
-    
-    if (!scheduleError) {
-      todaySchedule = scheduleData;
+    // Fetch the processed schedule data for all days
+    try {
+      const fullScheduleData = await fetchProcessedScheduleData();
+      const currentDayEnum = getCurrentHebrewDay(); // Get current DayOfWeek enum
+      slotsForToday = fullScheduleData[currentDayEnum] || []; // Get slots for today
+    } catch (scheduleError) {
+      console.error("Error fetching processed schedule data:", scheduleError);
+      slotsForToday = []; // Default to empty on error
     }
     
     // Fetch active tasks
@@ -112,9 +113,9 @@ export default async function Home() {
           <ParentMessageCard message={parentMessages[0]} userName={displayName} />
         </SuspenseWrapper>
         
-        {/* Today's Schedule Card */}
+        {/* Today's Schedule Card - Pass slotsForToday prop */}
         <SuspenseWrapper>
-          <TodaySchedule schedules={todaySchedule} />
+          <TodaySchedule slotsForToday={slotsForToday} />
         </SuspenseWrapper>
       </div>
       

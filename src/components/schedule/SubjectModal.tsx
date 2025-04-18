@@ -1,4 +1,4 @@
-import { Subject, subjects } from './types';
+import { Subject, subjects } from '@/types/schedule';
 
 interface SubjectModalProps {
   onSelect: (subject: Subject | null) => void;
@@ -18,16 +18,23 @@ export default function SubjectModal({ onSelect, onCancel }: SubjectModalProps) 
         </h3>
         
         <div className="grid grid-cols-2 gap-3 mb-6">
-          {subjects.map((subject, index) => (
-            <button
-              key={index}
-              className={`p-3 rounded-lg ${subject.color} flex items-center hover:shadow-md transition-all border-2 border-${subject.color.replace('bg-', '')}`}
-              onClick={() => onSelect(subject)}
-            >
-              <span className="text-2xl mr-2">{subject.icon}</span>
-              <span className={`${subject.textColor} font-medium`}>{subject.name}</span>
-            </button>
-          ))}
+          {subjects.map((subject, index) => {
+            // Provide default values if color is undefined
+            const bgColor = subject.color || 'bg-gray-100'; 
+            const borderColor = subject.color ? `border-${subject.color.replace('bg-', '')}` : 'border-gray-200';
+
+            return (
+              <button
+                key={index}
+                // Use the calculated default values
+                className={`p-3 rounded-lg ${bgColor} flex items-center hover:shadow-md transition-all border-2 ${borderColor}`}
+                onClick={() => onSelect(subject)}
+              >
+                <span className="text-2xl mr-2">{subject.icon || '📝'}</span> {/* Added default icon */}
+                <span className={`${subject.textColor || 'text-gray-700'} font-medium`}>{subject.name}</span> {/* Added default text color */}
+              </button>
+            );
+          })}
           
           <button
             className="p-3 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all col-span-2 flex items-center justify-center"

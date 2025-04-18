@@ -1,34 +1,31 @@
-import { Subject, TimeSlot } from './types';
+import { ScheduleSlot } from '../../types/schedule';
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useState, memo } from 'react';
+import { Button } from '@/components/ui/button';
+import { Plus, Edit2, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface ScheduleItemProps {
-  time: string;
-  timeSlot: TimeSlot;
-  lesson: Subject | null;
-  slotIndex: number;
+  slot: ScheduleSlot;
   isEditing: boolean;
   isTimeEditing: boolean;
   isCurrentTimeSlot?: boolean;
   onEdit: (slotIndex: number) => void;
-  onTimeEdit: (slotIndex: number, changes: Partial<TimeSlot>) => void;
+  onTimeEdit: (slotIndex: number, changes: Partial<Pick<ScheduleSlot, 'startTime' | 'endTime'>>) => void;
 }
 
 /**
  * Individual schedule item component that displays a lesson or an empty slot
  * Enhanced for better mobile experience and kid-friendly UI
+ * Memoized to prevent unnecessary re-renders.
  */
-export default function ScheduleItem({ 
-  time, 
-  timeSlot,
-  lesson, 
-  slotIndex,
+const ScheduleItemComponent = ({ 
+  slot,
   isEditing, 
   isTimeEditing,
   isCurrentTimeSlot = false,
   onEdit,
-  onTimeEdit
-}: ScheduleItemProps) {
+  onTimeEdit,
+}: ScheduleItemProps) => {
   const [expanded, setExpanded] = useState(false);
   
   // Animation variants for the items
@@ -37,6 +34,11 @@ export default function ScheduleItem({
     animate: { opacity: 1, y: 0, transition: { duration: 0.3 } },
     hover: { scale: 1.01, transition: { duration: 0.2 } }
   };
+
+  // Destructure needed values from the slot object
+  const { slotIndex, subject, startTime, endTime } = slot;
+  const lesson = subject; // Alias for clarity if needed
+  const displayTime = `${startTime} - ${endTime}`;
 
   return (
     <motion.div 
@@ -64,7 +66,7 @@ export default function ScheduleItem({
               <input
                 type="time"
                 className="w-full px-2 py-1 text-sm border rounded-md focus:ring-2 focus:ring-indigo-300 focus:border-indigo-300 focus:outline-none"
-                value={timeSlot.startTime}
+                value={startTime}
                 onChange={(e) => onTimeEdit(slotIndex, { startTime: e.target.value })}
               />
             </div>
@@ -73,7 +75,7 @@ export default function ScheduleItem({
               <input
                 type="time"
                 className="w-full px-2 py-1 text-sm border rounded-md focus:ring-2 focus:ring-indigo-300 focus:border-indigo-300 focus:outline-none"
-                value={timeSlot.endTime}
+                value={endTime}
                 onChange={(e) => onTimeEdit(slotIndex, { endTime: e.target.value })}
               />
             </div>
@@ -81,7 +83,7 @@ export default function ScheduleItem({
         ) : (
           <div className="flex justify-center items-center">
             <span className="font-bold text-indigo-600">
-              {timeSlot.startTime} - {timeSlot.endTime}
+              {displayTime}
             </span>
             {isCurrentTimeSlot && (
               <span className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 text-xs">
@@ -108,13 +110,15 @@ export default function ScheduleItem({
             {expanded && (
               <div className="w-full mt-2 sm:ml-4 sm:mt-0 pt-2 border-t sm:border-t-0 sm:pt-0 sm:border-r sm:pr-3 text-xs text-gray-700">
                 <div>שיעור מספר: {slotIndex + 1}</div>
-                <div>שעות: {time}</div>
+                <div>שעות: {displayTime}</div>
               </div>
             )}
             
             {/* Toggle expand button - mobile only */}
             {!isEditing && (
-              <button 
+              <Button 
+                variant="ghost"
+                size="icon"
                 className="sm:hidden ml-auto p-1.5 -mr-1 text-gray-500"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -122,37 +126,47 @@ export default function ScheduleItem({
                 }}
                 aria-label={expanded ? "הסתר פרטים" : "הצג פרטים"}
               >
-                {expanded ? '▲' : '▼'}
-              </button>
+                {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </Button>
             )}
             
             {isEditing && (
-              <motion.button
-                className="ml-auto bg-white bg-opacity-50 hover:bg-opacity-70 transition-colors rounded-full p-1.5 shadow-sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit(slotIndex);
-                }}
-                aria-label="ערוך שיעור"
+              <motion.div
+                className="ml-auto"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
               >
-                <span className="text-base sm:text-lg">✏️</span>
-              </motion.button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="bg-white bg-opacity-50 hover:bg-opacity-70 transition-colors rounded-full p-1.5 shadow-sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(slotIndex);
+                  }}
+                  aria-label="ערוך שיעור"
+                >
+                  <Edit2 className="h-4 w-4" />
+                </Button>
+              </motion.div>
             )}
           </motion.div>
         ) : (
           <div className="flex items-center justify-center h-full min-h-[3rem]">
             {isEditing ? (
-              <motion.button
-                className="py-2 px-3 sm:px-4 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors flex items-center shadow-sm"
-                onClick={() => onEdit(slotIndex)}
-                whileHover={{ scale: 1.03, backgroundColor: '#e5e7eb' }}
+              <motion.div
+                whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
               >
-                <span className="text-base sm:text-lg ml-1 sm:ml-2">➕</span>
-                <span className="text-gray-600 text-sm sm:text-base">הוסף שיעור</span>
-              </motion.button>
+                <Button
+                  variant="secondary"
+                  className="py-2 px-3 sm:px-4 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors flex items-center shadow-sm"
+                  onClick={() => onEdit(slotIndex)}
+                >
+                  <Plus className="ml-1 sm:ml-2 h-4 w-4" />
+                  <span className="text-gray-600 text-sm sm:text-base">הוסף שיעור</span>
+                </Button>
+              </motion.div>
             ) : (
               <div className="text-center">
                 <span className="text-gray-400 text-xs sm:text-sm py-2 block">אין שיעור</span>
@@ -163,4 +177,7 @@ export default function ScheduleItem({
       </div>
     </motion.div>
   );
-} 
+};
+
+// Export the memoized component
+export default memo(ScheduleItemComponent); 

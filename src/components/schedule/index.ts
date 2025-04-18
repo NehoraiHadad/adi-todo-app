@@ -7,7 +7,7 @@ export { default as TodaySchedule } from './TodaySchedule';
 export { default as MobileNavDrawer } from './MobileNavDrawer';
 
 // Export types and utilities
-export * from './types';
+export * from '@/types/schedule';
 export * from './utils';
 
 // Export hooks
