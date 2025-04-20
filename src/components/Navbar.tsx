@@ -15,7 +15,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -101,36 +100,25 @@ const UserMenu = ({ user, getUserInitials, handleSignOut, isMobile = false }: {
       align="end" 
       className={`${isMobile ? 'w-64' : 'w-56'} z-50 shadow-lg rounded-xl border-2 border-indigo-200 p-2 bg-gradient-to-b from-white to-indigo-50 font-medium`}
     >
-      <div className="p-2 mb-2 flex items-center justify-between border-b-2 border-indigo-100 pb-3">
-        <div className="flex items-center gap-2">
-          <UserAvatar user={user} getUserInitials={getUserInitials} />
-          <div className="flex flex-col">
-            <span className="font-bold text-indigo-600">
-              {user.user_metadata?.display_name || user.email || 'משתמש'}
-            </span>
-            <span className="text-xs text-gray-500 text-right">{user.email}</span>
-          </div>
-        </div>
-      </div>
       
-      <DropdownMenuItem className="flex items-center gap-2 rounded-lg hover:bg-indigo-100 focus:bg-indigo-100 cursor-pointer my-1 p-2 transition-colors">
-        <span className="text-xl">👤</span>
-        <Link href="/profile" className="w-full">הפרופיל שלי</Link>
+      <DropdownMenuItem className="flex items-center gap-2 rounded-lg hover:bg-indigo-100 focus:bg-indigo-100 cursor-pointer my-1.5 p-2.5 transition-colors">
+        <span className="text-xl bg-yellow-100 p-1 rounded-md">👤</span>
+        <Link href="/profile" className="w-full text-center">הפרופיל שלי</Link>
       </DropdownMenuItem>
       
-      <DropdownMenuItem className="flex items-center gap-2 rounded-lg hover:bg-indigo-100 focus:bg-indigo-100 cursor-pointer my-1 p-2 transition-colors">
-        <span className="text-xl">⚙️</span>
-        <Link href="/settings" className="w-full">הגדרות</Link>
+      <DropdownMenuItem className="flex items-center gap-2 rounded-lg hover:bg-indigo-100 focus:bg-indigo-100 cursor-pointer my-1.5 p-2.5 transition-colors">
+        <span className="text-xl bg-indigo-100 p-1 rounded-md">⚙️</span>
+        <Link href="/settings" className="w-full text-center">הגדרות</Link>
       </DropdownMenuItem>
       
       <DropdownMenuSeparator className="my-2 h-0.5 bg-indigo-100 rounded-full" />
       
       <DropdownMenuItem 
         onClick={handleSignOut} 
-        className="flex items-center gap-2 rounded-lg hover:bg-red-50 focus:bg-red-50 cursor-pointer p-2 my-1 text-red-600 transition-colors"
+        className="flex items-center gap-2 rounded-lg hover:bg-red-50 focus:bg-red-50 cursor-pointer p-2.5 my-1.5 text-red-600 transition-colors"
       >
-        <span className="text-xl">🚪</span>
-        <span>התנתק</span>
+        <span className="text-xl bg-red-100 p-1 rounded-md">🚪</span>
+        <span className="w-full text-center">התנתק</span>
       </DropdownMenuItem>
     </DropdownMenuContent>
   </DropdownMenu>
