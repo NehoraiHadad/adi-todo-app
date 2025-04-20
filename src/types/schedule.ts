@@ -27,9 +27,11 @@ export interface ScheduleData {
 
 // Represents the structure for default time definitions (without subject/day)
 export interface DefaultTimeSlot {
-    id?: number | string; // Optional ID if needed
+    id?: string; // UUID from database
     startTime: string;
     endTime: string;
+    slotIndex?: number; // Position in the schedule
+    is_default?: boolean;
 }
 
 // Helper type for editing state

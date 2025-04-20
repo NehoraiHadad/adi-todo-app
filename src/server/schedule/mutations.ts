@@ -110,10 +110,50 @@ export async function saveScheduleData(scheduleData: ScheduleData) {
   return { success: true, message: 'Schedule saved successfully.' };
 }
 
-// TODO: Add function to save TimeSlots if they are editable
+// Save time slots to the database
 export async function saveTimeSlots(timeSlots: DefaultTimeSlot[]) {
-  // Placeholder: In a real app, save this to Supabase
   console.log('Saving time slots:', timeSlots);
-  // ... Supabase client call to update/insert time slots ...
-  return { success: true };
+  
+  try {
+    const supabase = await createClient();
+    
+    // Process each time slot
+    const results = await Promise.all(timeSlots.map(async (slot) => {
+      // If slot has an ID, update it, otherwise insert a new one
+      if (slot.id) {
+        const { error } = await supabase
+          .from('time_slots')
+          .update({
+            start_time: slot.startTime,
+            end_time: slot.endTime,
+            slot_index: slot.slotIndex,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', slot.id);
+          
+        if (error) throw error;
+        return { success: true, id: slot.id, operation: 'update' };
+      } else {
+        // Insert new time slot
+        const { data, error } = await supabase
+          .from('time_slots')
+          .insert({
+            start_time: slot.startTime,
+            end_time: slot.endTime,
+            slot_index: slot.slotIndex,
+            is_default: true,
+          })
+          .select('id')
+          .single();
+          
+        if (error) throw error;
+        return { success: true, id: data.id, operation: 'insert' };
+      }
+    }));
+    
+    return { success: true, results };
+  } catch (error) {
+    console.error('Error saving time slots:', error);
+    return { success: false, error };
+  }
 } 

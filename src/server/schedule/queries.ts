@@ -46,24 +46,60 @@ const MOCK_SUBJECTS: Subject[] = [
 const subjectsMapByName = new Map(MOCK_SUBJECTS.map(s => [s.name, s]));
 
 /**
- * Fetches the default time slots.
- * TODO: Fetch this from Supabase instead of hardcoding.
+ * Fetches the default time slots from Supabase.
  */
 async function fetchDefaultTimeSlots(): Promise<DefaultTimeSlot[]> {
   noStore();
-  console.log('Fetching default time slots...');
-  // Use the new type
-  const DEFAULT_TIME_SLOTS: DefaultTimeSlot[] = [
-    { startTime: '08:00', endTime: '08:45' },
-    { startTime: '08:50', endTime: '09:35' },
-    { startTime: '09:50', endTime: '10:35' },
-    { startTime: '10:40', endTime: '11:25' },
-    { startTime: '11:40', endTime: '12:25' },
-    { startTime: '12:30', endTime: '13:15' },
-    { startTime: '13:30', endTime: '14:15' },
-    { startTime: '14:20', endTime: '15:05' },
-  ];
-  return DEFAULT_TIME_SLOTS;
+  console.log('Fetching default time slots from database...');
+  
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('time_slots')
+      .select('*')
+      .order('slot_index', { ascending: true });
+      
+    if (error) {
+      console.error('Error fetching time slots:', error);
+      throw new Error(`Failed to fetch time slots: ${error.message}`);
+    }
+    
+    if (!data || data.length === 0) {
+      console.warn('No time slots found in database, returning hardcoded defaults');
+      // Fallback to hardcoded defaults if no data in database
+      return [
+        { startTime: '08:00', endTime: '08:45' },
+        { startTime: '08:50', endTime: '09:35' },
+        { startTime: '09:50', endTime: '10:35' },
+        { startTime: '10:40', endTime: '11:25' },
+        { startTime: '11:40', endTime: '12:25' },
+        { startTime: '12:30', endTime: '13:15' },
+        { startTime: '13:30', endTime: '14:15' },
+        { startTime: '14:20', endTime: '15:05' },
+      ];
+    }
+    
+    // Transform database records to DefaultTimeSlot format
+    return data.map(slot => ({
+      id: slot.id,
+      startTime: slot.start_time.substring(0, 5), // Format as HH:MM
+      endTime: slot.end_time.substring(0, 5),     // Format as HH:MM
+      slotIndex: slot.slot_index
+    }));
+  } catch (error) {
+    console.error('Failed to fetch time slots:', error);
+    // Return hardcoded defaults as fallback
+    return [
+      { startTime: '08:00', endTime: '08:45' },
+      { startTime: '08:50', endTime: '09:35' },
+      { startTime: '09:50', endTime: '10:35' },
+      { startTime: '10:40', endTime: '11:25' },
+      { startTime: '11:40', endTime: '12:25' },
+      { startTime: '12:30', endTime: '13:15' },
+      { startTime: '13:30', endTime: '14:15' },
+      { startTime: '14:20', endTime: '15:05' },
+    ];
+  }
 }
 
 /**
@@ -110,14 +146,21 @@ export async function fetchProcessedScheduleData(): Promise<ScheduleData> {
     const day = dayNumberToDayOfWeek(record.day_of_week);
     if (day && processedData[day] && record.slot_index < processedData[day]!.length) {
       const subject = record.subject ? subjectsMapByName.get(record.subject) : null;
-      // Update the existing slot with data from the record
-      processedData[day]![record.slot_index] = {
-          slotIndex: record.slot_index,
-          day: day,
-          subject: subject || null,
-          startTime: record.start_time.substring(0, 5), // Use specific time from DB (HH:MM)
-          endTime: record.end_time.substring(0, 5),     // Use specific time from DB (HH:MM)
-      };
+      
+      // Fixed: If there's a subject assigned, use specific times from the DB
+      // If no subject is assigned, keep the default times already in this time slot
+      if (subject || record.subject) {
+        processedData[day]![record.slot_index] = {
+            slotIndex: record.slot_index,
+            day: day,
+            subject: subject || null,
+            startTime: record.start_time.substring(0, 5), // Use specific time from DB
+            endTime: record.end_time.substring(0, 5),     // Use specific time from DB
+        };
+      } else {
+        // Only store the subject information (null), but keep default times
+        processedData[day]![record.slot_index].subject = null;
+      }
     }
   });
 

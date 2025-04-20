@@ -5,11 +5,12 @@ import { ScheduleData, DefaultTimeSlot } from '@/types/schedule';
 import { ScheduleGrid, DayTabs } from '@/components/schedule';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Edit, Clock, RefreshCw } from 'lucide-react';
+import { Edit, Clock, RefreshCw, Settings } from 'lucide-react';
+import Link from 'next/link';
 
 interface ScheduleViewProps {
   initialSchedule: ScheduleData; // Expect the full ScheduleData object
-  _initialTimeSlots: DefaultTimeSlot[]; // Renamed from initialTimeSlots
+  _initialTimeSlots: DefaultTimeSlot[];
   initialSelectedDay: DayOfWeek;
   isAdmin: boolean;
   onEdit: () => void; // Function to switch to edit mode
@@ -18,11 +19,11 @@ interface ScheduleViewProps {
 }
 
 /**
- * Read-only view of the schedule.
+ * View component for displaying schedule - only for view mode (not edit mode)
  */
 export default function ScheduleView({
   initialSchedule,
-  _initialTimeSlots, // Renamed from initialTimeSlots
+  _initialTimeSlots,
   initialSelectedDay,
   isAdmin,
   onEdit,
@@ -38,42 +39,45 @@ export default function ScheduleView({
 
   return (
     <div>
-       {/* Header section with Edit buttons - specific to View mode */}
-       <div className="flex justify-end gap-2 mb-4 print:hidden">
-            {/* Add Refresh Button */}
+      {/* Admin-only controls */}
+      {isAdmin && (
+        <div className="flex justify-end gap-2 mb-4 print:hidden">
+          <Button 
+            variant="ghost" 
+            title="רענון נתונים"
+            onClick={onRefresh}
+            className="text-gray-500 hover:text-indigo-600"
+          >
+            <RefreshCw className="h-4 w-4 mr-1" />
+          </Button>
+          
+          <Button 
+            variant="outline"
+            onClick={onEditTimes}
+            className="text-indigo-700 border-indigo-200 hover:bg-indigo-50"
+          >
+            <Clock className="h-4 w-4 mr-1" />
+          </Button>
+          
+          <Button 
+            variant="default" 
+            onClick={onEdit}
+            className="bg-indigo-600 hover:bg-indigo-700"
+          >
+            <Edit className="h-4 w-4 mr-1" />
+          </Button>
+          
+          <Link href="/schedule/time-slots">
             <Button 
-                onClick={onRefresh}
-                variant="outline" 
-                size="icon" // Use icon size for consistency
-                aria-label="רענן נתונים"
+              variant="outline"
+              className="text-green-700 border-green-200 hover:bg-green-50"
             >
-                <RefreshCw className="h-4 w-4" /> 
+              <Settings className="h-4 w-4 mr-1" />
             </Button>
-            {isAdmin && (
-                <Button 
-                    onClick={onEdit}
-                    aria-label="ערוך מערכת"
-                    variant="outline" // Change to outline for consistency
-                    size="icon" // Use icon size
-                >
-                    <Edit className="h-4 w-4" /> 
-                    {/* Removed text: ערוך מערכת */}
-                </Button>
-            )}
-            {isAdmin && (
-                <Button 
-                    onClick={onEditTimes}
-                    variant="outline" // Change to outline for consistency
-                    size="icon" // Use icon size
-                    aria-label="ערוך זמנים"
-                 >
-                    <Clock className="h-4 w-4" /> 
-                    {/* Removed text: ערוך זמנים */}
-                 </Button>
-            )}
+          </Link>
         </div>
-
-      {/* Day tabs remain */}
+      )}
+      
       <div className="print:hidden">
         <DayTabs 
           selectedDay={selectedDay} 
