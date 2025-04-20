@@ -20,26 +20,141 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+// Define User type based on the structure used in the application
+type UserType = {
+  email?: string;
+  user_metadata?: {
+    display_name?: string;
+  };
+};
+
+type NavLinkProps = {
+  href: string;
+  icon: string;
+  label: string;
+  isActive: boolean;
+};
+
+// NavLink component for desktop menu
+const DesktopNavLink = ({ href, icon, label, isActive }: NavLinkProps) => (
+  <Button 
+    asChild
+    variant={isActive ? "secondary" : "ghost"}
+    className={`font-medium px-2 md:px-3 lg:px-4 text-sm md:text-base ${isActive ? 'bg-white text-indigo-600' : 'text-white hover:bg-indigo-300 hover:text-white'}`}
+  >
+    <Link href={href}>
+      <span className="text-xl ml-1">{icon}</span>
+      <span className="hidden md:inline">{label}</span>
+    </Link>
+  </Button>
+);
+
+// NavLink component for mobile menu
+const MobileNavLink = ({ href, icon, label, isActive }: NavLinkProps) => (
+  <Button 
+    asChild
+    variant={isActive ? "default" : "ghost"}
+    className={`justify-start text-lg font-medium h-14 ${
+      isActive 
+        ? 'bg-indigo-500 text-white shadow-md' 
+        : 'text-indigo-700 hover:bg-indigo-200'
+    }`}
+  >
+    <Link href={href}>
+      <span className="text-xl ml-2">{icon}</span>
+      {label}
+    </Link>
+  </Button>
+);
+
+// User Profile Avatar Component
+const UserAvatar = ({ user, getUserInitials, isMobile = false }: { 
+  user: UserType; 
+  getUserInitials: () => string;
+  isMobile?: boolean;
+}) => (
+  <Avatar className={`cursor-pointer border-2 border-white ${isMobile ? 'mr-4' : ''}`}>
+    <AvatarImage src="" alt={user.user_metadata?.display_name || user.email || 'User'} />
+    <AvatarFallback className="bg-yellow-400 text-indigo-700">
+      {getUserInitials()}
+    </AvatarFallback>
+  </Avatar>
+);
+
+// User Menu Content Component
+const UserMenuContent = ({ handleSignOut, isMobile = false }: { 
+  handleSignOut: () => void;
+  isMobile?: boolean;
+}) => (
+  <DropdownMenuContent align="end" className={`${isMobile ? 'w-64' : 'w-56'} z-50`}>
+    <DropdownMenuLabel>החשבון שלי</DropdownMenuLabel>
+    <DropdownMenuSeparator />
+    <DropdownMenuItem>
+      <Link href="/profile" className={`w-full ${isMobile ? 'p-2' : ''}`}>הפרופיל שלי</Link>
+    </DropdownMenuItem>
+    <DropdownMenuItem>
+      <Link href="/settings" className={`w-full ${isMobile ? 'p-2' : ''}`}>הגדרות</Link>
+    </DropdownMenuItem>
+    <DropdownMenuSeparator />
+    <DropdownMenuItem onClick={handleSignOut} className={`text-red-600 ${isMobile ? 'p-2' : ''}`}>
+      התנתק
+    </DropdownMenuItem>
+  </DropdownMenuContent>
+);
+
+// Mobile Menu Sheet Content Component
+const MobileMenuContent = ({ isActive, handleSignOut, user }: { 
+  isActive: (path: string) => boolean;
+  handleSignOut: () => void;
+  user: UserType | null;
+}) => (
+  <div className="flex flex-col space-y-4">
+    <MobileNavLink href="/" icon="🏠" label="בית" isActive={isActive('/')} />
+    <MobileNavLink href="/schedule" icon="📅" label="מערכת לימודים" isActive={isActive('/schedule')} />
+    <MobileNavLink href="/tasks" icon="✏️" label="משימות" isActive={isActive('/tasks')} />
+    <MobileNavLink href="/equipment" icon="🎒" label="ציוד יומי" isActive={isActive('/equipment')} />
+    <MobileNavLink href="/rewards" icon="🏆" label="פרסים" isActive={isActive('/rewards')} />
+
+    {/* Login/Logout Button for Mobile */}
+    {!user ? (
+      <Button 
+        asChild
+        variant={isActive('/login') ? "default" : "outline"}
+        className={`justify-start text-lg font-medium h-14 ${
+          isActive('/login') 
+            ? 'bg-indigo-500 text-white shadow-md' 
+            : 'text-indigo-700 hover:bg-indigo-200 border-indigo-500'
+        }`}
+      >
+        <Link href="/login">
+          <span className="text-xl ml-2">👤</span>
+          התחברות
+        </Link>
+      </Button>
+    ) : (
+      <Button 
+        onClick={handleSignOut}
+        variant="outline"
+        className="justify-start text-lg font-medium text-red-600 border-red-500 hover:bg-red-100 h-14"
+      >
+        <span className="text-xl ml-2">🚪</span>
+        התנתק
+      </Button>
+    )}
+  </div>
+);
+
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
   const { user, signOut } = useAuth();
   
-  const isActive = (path: string) => {
-    return pathname === path;
-  };
+  const isActive = (path: string) => pathname === path;
 
   const handleSignOut = async () => {
     try {
-      // Close the mobile menu if it's open
-      if (isMenuOpen) {
-        setIsMenuOpen(false);
-      }
-      
-      // Call the signOut function from AuthContext
+      if (isMenuOpen) setIsMenuOpen(false);
       await signOut();
-      
-      // No need for router.push here, the signOut function will handle redirection
     } catch (error) {
       console.error('Error signing out:', error);
     }
@@ -49,11 +164,9 @@ export default function Navbar() {
   const getUserInitials = () => {
     if (!user) return '?';
     
-    // Use display_name from user_metadata if available, otherwise fallback to email
     const displayName = user.user_metadata?.display_name || user.email;
     if (!displayName) return '?';
     
-    // If display name has multiple words, use first letter of each word (up to 2 words)
     if (displayName.includes(' ')) {
       const words = displayName.split(' ').filter((word: string) => word.length > 0);
       if (words.length >= 2) {
@@ -61,19 +174,27 @@ export default function Navbar() {
       }
     }
     
-    // For single names, if name is 3 chars or less, use the full name
     if (displayName.length <= 3) {
       return displayName.toUpperCase();
     }
     
-    // Default to first 2 characters
     return displayName.substring(0, 2).toUpperCase();
   };
+  
+  // Navigation links data
+  const navLinks = [
+    { href: '/', icon: '🏠', label: 'בית' },
+    { href: '/schedule', icon: '📅', label: 'מערכת לימודים' },
+    { href: '/tasks', icon: '✏️', label: 'משימות' },
+    { href: '/equipment', icon: '🎒', label: 'ציוד יומי' },
+    { href: '/rewards', icon: '🏆', label: 'פרסים' },
+  ];
   
   return (
     <nav className="bg-gradient-to-r from-indigo-400 to-purple-500 shadow-md border-b-4 border-yellow-300 text-white sticky top-0 z-50">
       <div className="container-app">
         <div className="flex justify-between h-16">
+          {/* Logo and Site Title */}
           <div className="flex items-center">
             <Link href="/" className="flex-shrink-0 flex items-center">
               <span className="text-3xl">🏫</span>
@@ -81,133 +202,55 @@ export default function Navbar() {
             </Link>
           </div>
           
-          {/* Desktop Menu */}
-          <div className="hidden md:flex md:items-center md:space-x-reverse md:space-x-6">
-            <Button 
-              asChild
-              variant={isActive('/') ? "secondary" : "ghost"}
-              className={`font-medium ${isActive('/') ? 'bg-white text-indigo-600' : 'text-white hover:bg-indigo-300 hover:text-white'}`}
-            >
-              <Link href="/">
-                <span className="text-xl ml-1">🏠</span>
-                בית
-              </Link>
-            </Button>
-            
-            <Button 
-              asChild
-              variant={isActive('/schedule') ? "secondary" : "ghost"}
-              className={`font-medium ${isActive('/schedule') ? 'bg-white text-indigo-600' : 'text-white hover:bg-indigo-300 hover:text-white'}`}
-            >
-              <Link href="/schedule">
-                <span className="text-xl ml-1">📅</span>
-                מערכת לימודים
-              </Link>
-            </Button>
-            
-            <Button 
-              asChild
-              variant={isActive('/tasks') ? "secondary" : "ghost"}
-              className={`font-medium ${isActive('/tasks') ? 'bg-white text-indigo-600' : 'text-white hover:bg-indigo-300 hover:text-white'}`}
-            >
-              <Link href="/tasks">
-                <span className="text-xl ml-1">✏️</span>
-                משימות
-              </Link>
-            </Button>
-            
-            <Button 
-              asChild
-              variant={isActive('/equipment') ? "secondary" : "ghost"}
-              className={`font-medium ${isActive('/equipment') ? 'bg-white text-indigo-600' : 'text-white hover:bg-indigo-300 hover:text-white'}`}
-            >
-              <Link href="/equipment">
-                <span className="text-xl ml-1">🎒</span>
-                ציוד יומי
-              </Link>
-            </Button>
-            
-            <Button 
-              asChild
-              variant={isActive('/rewards') ? "secondary" : "ghost"}
-              className={`font-medium ${isActive('/rewards') ? 'bg-white text-indigo-600' : 'text-white hover:bg-indigo-300 hover:text-white'}`}
-            >
-              <Link href="/rewards">
-                <span className="text-xl ml-1">🏆</span>
-                פרסים
-              </Link>
-            </Button>
+          {/* Desktop Menu - only visible on md screens and up */}
+          <div className="hidden md:flex md:items-center md:space-x-reverse">
+            <div className="flex flex-nowrap items-center justify-end gap-1 md:gap-2 lg:gap-4">
+              {navLinks.map((link) => (
+                <DesktopNavLink 
+                  key={link.href}
+                  href={link.href}
+                  icon={link.icon}
+                  label={link.label}
+                  isActive={isActive(link.href)}
+                />
+              ))}
 
-            {/* User Profile or Login Button */}
-            {user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Avatar className="cursor-pointer border-2 border-white">
-                    <AvatarImage src="" alt={user.user_metadata?.display_name || user.email || 'User'} />
-                    <AvatarFallback className="bg-yellow-400 text-indigo-700">
-                      {getUserInitials()}
-                    </AvatarFallback>
-                  </Avatar>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>החשבון שלי</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                    <Link href="/profile" className="w-full">הפרופיל שלי</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Link href="/settings" className="w-full">הגדרות</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut} className="text-red-600">
-                    התנתק
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <Button 
-                asChild
-                variant="secondary"
-                className="bg-white text-indigo-600 hover:bg-yellow-100"
-              >
-                <Link href="/login">
-                  <span className="text-xl ml-1">👤</span>
-                  התחברות
-                </Link>
-              </Button>
-            )}
+              {/* User Profile or Login Button */}
+              {user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <UserAvatar user={user} getUserInitials={getUserInitials} />
+                  </DropdownMenuTrigger>
+                  <UserMenuContent handleSignOut={handleSignOut} />
+                </DropdownMenu>
+              ) : (
+                <Button 
+                  asChild
+                  variant="secondary"
+                  className="bg-white text-indigo-600 hover:bg-yellow-100 px-2 md:px-3 lg:px-4 text-sm md:text-base"
+                >
+                  <Link href="/login">
+                    <span className="text-xl ml-1">👤</span>
+                    <span className="hidden md:inline">התחברות</span>
+                  </Link>
+                </Button>
+              )}
+            </div>
           </div>
           
-          {/* Mobile menu using Sheet */}
+          {/* Mobile menu toggle button - visible below md screens */}
           <div className="flex items-center md:hidden">
             {/* User Profile Button for Mobile */}
             {user && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Avatar className="cursor-pointer border-2 border-white mr-4">
-                    <AvatarImage src="" alt={user.user_metadata?.display_name || user.email || 'User'} />
-                    <AvatarFallback className="bg-yellow-400 text-indigo-700">
-                      {getUserInitials()}
-                    </AvatarFallback>
-                  </Avatar>
+                  <UserAvatar user={user} getUserInitials={getUserInitials} isMobile={true} />
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64">
-                  <DropdownMenuLabel>החשבון שלי</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                    <Link href="/profile" className="w-full p-2">הפרופיל שלי</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Link href="/settings" className="w-full p-2">הגדרות</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut} className="text-red-600 p-2">
-                    התנתק
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
+                <UserMenuContent handleSignOut={handleSignOut} isMobile={true} />
               </DropdownMenu>
             )}
 
+            {/* Mobile menu sheet */}
             <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="text-white hover:bg-indigo-300 h-12 w-12 rounded-full">
@@ -223,113 +266,13 @@ export default function Navbar() {
                   <span className="sr-only">פתח תפריט</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="bg-gradient-to-b from-indigo-100 to-purple-50 w-[280px] pt-10">
+              <SheetContent side="right" className="bg-gradient-to-b from-indigo-100 to-purple-50 w-[280px] pt-10 z-50">
                 <SheetTitle className="text-2xl text-center text-indigo-700 mb-6">תפריט ניווט</SheetTitle>
-                <div className="flex flex-col space-y-4">
-                  <Button 
-                    asChild
-                    variant={isActive('/') ? "default" : "ghost"}
-                    className={`justify-start text-lg font-medium h-14 ${
-                      isActive('/') 
-                        ? 'bg-indigo-500 text-white shadow-md' 
-                        : 'text-indigo-700 hover:bg-indigo-200'
-                    }`}
-                  >
-                    <Link href="/">
-                      <span className="text-xl ml-2">🏠</span>
-                      בית
-                    </Link>
-                  </Button>
-                  
-                  <Button 
-                    asChild
-                    variant={isActive('/schedule') ? "default" : "ghost"}
-                    className={`justify-start text-lg font-medium h-14 ${
-                      isActive('/schedule') 
-                        ? 'bg-indigo-500 text-white shadow-md' 
-                        : 'text-indigo-700 hover:bg-indigo-200'
-                    }`}
-                  >
-                    <Link href="/schedule">
-                      <span className="text-xl ml-2">📅</span>
-                      מערכת לימודים
-                    </Link>
-                  </Button>
-                  
-                  <Button 
-                    asChild
-                    variant={isActive('/tasks') ? "default" : "ghost"}
-                    className={`justify-start text-lg font-medium h-14 ${
-                      isActive('/tasks') 
-                        ? 'bg-indigo-500 text-white shadow-md' 
-                        : 'text-indigo-700 hover:bg-indigo-200'
-                    }`}
-                  >
-                    <Link href="/tasks">
-                      <span className="text-xl ml-2">✏️</span>
-                      משימות
-                    </Link>
-                  </Button>
-                  
-                  <Button 
-                    asChild
-                    variant={isActive('/equipment') ? "default" : "ghost"}
-                    className={`justify-start text-lg font-medium h-14 ${
-                      isActive('/equipment') 
-                        ? 'bg-indigo-500 text-white shadow-md' 
-                        : 'text-indigo-700 hover:bg-indigo-200'
-                    }`}
-                  >
-                    <Link href="/equipment">
-                      <span className="text-xl ml-2">🎒</span>
-                      ציוד יומי
-                    </Link>
-                  </Button>
-                  
-                  <Button 
-                    asChild
-                    variant={isActive('/rewards') ? "default" : "ghost"}
-                    className={`justify-start text-lg font-medium h-14 ${
-                      isActive('/rewards') 
-                        ? 'bg-indigo-500 text-white shadow-md' 
-                        : 'text-indigo-700 hover:bg-indigo-200'
-                    }`}
-                  >
-                    <Link href="/rewards">
-                      <span className="text-xl ml-2">🏆</span>
-                      פרסים
-                    </Link>
-                  </Button>
-
-                  {/* Login/Logout Button for Mobile */}
-                  {!user && (
-                    <Button 
-                      asChild
-                      variant={isActive('/login') ? "default" : "outline"}
-                      className={`justify-start text-lg font-medium h-14 ${
-                        isActive('/login') 
-                          ? 'bg-indigo-500 text-white shadow-md' 
-                          : 'text-indigo-700 hover:bg-indigo-200 border-indigo-500'
-                      }`}
-                    >
-                      <Link href="/login">
-                        <span className="text-xl ml-2">👤</span>
-                        התחברות
-                      </Link>
-                    </Button>
-                  )}
-
-                  {user && (
-                    <Button 
-                      onClick={handleSignOut}
-                      variant="outline"
-                      className="justify-start text-lg font-medium text-red-600 border-red-500 hover:bg-red-100 h-14"
-                    >
-                      <span className="text-xl ml-2">🚪</span>
-                      התנתק
-                    </Button>
-                  )}
-                </div>
+                <MobileMenuContent 
+                  isActive={isActive} 
+                  handleSignOut={handleSignOut} 
+                  user={user} 
+                />
               </SheetContent>
             </Sheet>
           </div>
