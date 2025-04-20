@@ -67,71 +67,49 @@ const MobileNavLink = ({ href, icon, label, isActive }: NavLinkProps) => (
   </Button>
 );
 
-// User Profile Avatar Component - Now it's a div wrapper with button styling
+// User Profile Avatar Component
 const UserAvatar = ({ user, getUserInitials, isMobile = false }: { 
   user: UserType; 
   getUserInitials: () => string;
   isMobile?: boolean;
 }) => (
-  <div className={`flex cursor-pointer items-center justify-center ${isMobile ? 'mr-4' : ''}`}>
-    <Avatar className="border-2 border-white hover:border-yellow-200">
-      <AvatarImage src="" alt={user.user_metadata?.display_name || user.email || 'User'} />
-      <AvatarFallback className="bg-yellow-400 text-indigo-700">
-        {getUserInitials()}
-      </AvatarFallback>
-    </Avatar>
-  </div>
+  <Avatar className={`cursor-pointer border-2 border-white ${isMobile ? 'mr-4' : ''}`}>
+    <AvatarImage src="" alt={user.user_metadata?.display_name || user.email || 'User'} />
+    <AvatarFallback className="bg-yellow-400 text-indigo-700">
+      {getUserInitials()}
+    </AvatarFallback>
+  </Avatar>
 );
 
-// User Menu Component with Direct Links
-const UserMenu = ({ user, handleSignOut, getUserInitials }: {
+// User Menu Component - combines trigger and content
+const UserMenu = ({ user, getUserInitials, handleSignOut, isMobile = false }: {
   user: UserType;
-  handleSignOut: () => void;
   getUserInitials: () => string;
-}) => {
-  return (
-    <div className="flex flex-col items-center gap-4 py-2">
-      {/* Larger user avatar in menu */}
-      <Avatar className="h-16 w-16 border-2 border-indigo-400">
-        <AvatarImage src="" alt={user.user_metadata?.display_name || user.email || 'User'} />
-        <AvatarFallback className="bg-yellow-400 text-indigo-700 text-xl">
-          {getUserInitials()}
-        </AvatarFallback>
-      </Avatar>
-      
-      <div className="text-center font-medium text-indigo-800">
-        {user.user_metadata?.display_name || user.email || 'משתמש'}
-      </div>
-      
-      <div className="w-full border-t border-indigo-100 pt-2">
-        <Button asChild variant="ghost" className="w-full justify-start text-indigo-700">
-          <Link href="/profile">
-            <span className="text-lg ml-2">👤</span>
-            הפרופיל שלי
-          </Link>
-        </Button>
-        
-        <Button asChild variant="ghost" className="w-full justify-start text-indigo-700">
-          <Link href="/settings">
-            <span className="text-lg ml-2">⚙️</span>
-            הגדרות
-          </Link>
-        </Button>
-        
-        <div className="border-t border-indigo-100 mt-2 pt-2">
-          <Button 
-            onClick={handleSignOut}
-            variant="ghost"
-            className="w-full justify-start text-red-600 hover:bg-red-50"
-          >
-            <span className="text-lg ml-2">🚪</span>
-            התנתק
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-};
+  handleSignOut: () => void;
+  isMobile?: boolean;
+}) => (
+  <DropdownMenu>
+    <DropdownMenuTrigger asChild>
+      <Button variant="ghost" className="p-0 h-auto bg-transparent hover:bg-transparent">
+        <UserAvatar user={user} getUserInitials={getUserInitials} isMobile={isMobile} />
+      </Button>
+    </DropdownMenuTrigger>
+    <DropdownMenuContent align="end" className={`${isMobile ? 'w-64' : 'w-56'} z-50`}>
+      <DropdownMenuLabel>החשבון שלי</DropdownMenuLabel>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem>
+        <Link href="/profile" className={`w-full ${isMobile ? 'p-2' : ''}`}>הפרופיל שלי</Link>
+      </DropdownMenuItem>
+      <DropdownMenuItem>
+        <Link href="/settings" className={`w-full ${isMobile ? 'p-2' : ''}`}>הגדרות</Link>
+      </DropdownMenuItem>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem onClick={handleSignOut} className={`text-red-600 ${isMobile ? 'p-2' : ''}`}>
+        התנתק
+      </DropdownMenuItem>
+    </DropdownMenuContent>
+  </DropdownMenu>
+);
 
 // Mobile Menu Sheet Content Component
 const MobileMenuContent = ({ isActive, handleSignOut, user }: { 
@@ -177,7 +155,6 @@ const MobileMenuContent = ({ isActive, handleSignOut, user }: {
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const pathname = usePathname();
   const { user, signOut } = useAuth();
   
@@ -186,16 +163,10 @@ export default function Navbar() {
   const handleSignOut = async () => {
     try {
       if (isMenuOpen) setIsMenuOpen(false);
-      if (isUserMenuOpen) setIsUserMenuOpen(false);
       await signOut();
     } catch (error) {
       console.error('Error signing out:', error);
     }
-  };
-
-  // Toggle User Menu
-  const toggleUserMenu = () => {
-    setIsUserMenuOpen(!isUserMenuOpen);
   };
 
   // Get user initials for avatar
@@ -255,26 +226,11 @@ export default function Navbar() {
 
               {/* User Profile or Login Button */}
               {user ? (
-                <div className="relative">
-                  <button 
-                    onClick={toggleUserMenu}
-                    className="flex items-center focus:outline-none"
-                    aria-expanded={isUserMenuOpen}
-                    aria-haspopup="true"
-                  >
-                    <UserAvatar user={user} getUserInitials={getUserInitials} />
-                  </button>
-                  
-                  {isUserMenuOpen && (
-                    <div className="absolute left-0 mt-2 w-64 origin-top-left rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
-                      <UserMenu 
-                        user={user} 
-                        handleSignOut={handleSignOut} 
-                        getUserInitials={getUserInitials} 
-                      />
-                    </div>
-                  )}
-                </div>
+                <UserMenu 
+                  user={user} 
+                  getUserInitials={getUserInitials}
+                  handleSignOut={handleSignOut}
+                />
               ) : (
                 <Button 
                   asChild
@@ -292,38 +248,14 @@ export default function Navbar() {
           
           {/* Mobile menu toggle button - visible below md screens */}
           <div className="flex items-center md:hidden">
-            {/* User Profile Button for Mobile or Login Button */}
-            {user ? (
-              <div className="relative mr-4">
-                <button 
-                  onClick={toggleUserMenu}
-                  className="flex items-center focus:outline-none"
-                  aria-expanded={isUserMenuOpen}
-                  aria-haspopup="true"
-                >
-                  <UserAvatar user={user} getUserInitials={getUserInitials} isMobile={true} />
-                </button>
-                
-                {isUserMenuOpen && (
-                  <div className="absolute left-0 mt-2 w-64 origin-top-left rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
-                    <UserMenu 
-                      user={user} 
-                      handleSignOut={handleSignOut} 
-                      getUserInitials={getUserInitials} 
-                    />
-                  </div>
-                )}
-              </div>
-            ) : (
-              <Button 
-                asChild
-                variant="secondary"
-                className="bg-white text-indigo-600 hover:bg-yellow-100 h-10 px-3 text-sm mr-3"
-              >
-                <Link href="/login">
-                  <span className="text-xl ml-1">👤</span>
-                </Link>
-              </Button>
+            {/* User Profile Button for Mobile */}
+            {user && (
+              <UserMenu 
+                user={user} 
+                getUserInitials={getUserInitials}
+                handleSignOut={handleSignOut}
+                isMobile={true}
+              />
             )}
 
             {/* Mobile menu sheet */}
