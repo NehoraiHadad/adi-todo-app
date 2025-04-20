@@ -240,14 +240,24 @@ export default function Navbar() {
           
           {/* Mobile menu toggle button - visible below md screens */}
           <div className="flex items-center md:hidden">
-            {/* User Profile Button for Mobile */}
-            {user && (
+            {/* User Profile Button for Mobile or Login Button */}
+            {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <UserAvatar user={user} getUserInitials={getUserInitials} isMobile={true} />
                 </DropdownMenuTrigger>
                 <UserMenuContent handleSignOut={handleSignOut} isMobile={true} />
               </DropdownMenu>
+            ) : (
+              <Button 
+                asChild
+                variant="secondary"
+                className="bg-white text-indigo-600 hover:bg-yellow-100 h-10 px-3 text-sm mr-3"
+              >
+                <Link href="/login">
+                  <span className="text-xl ml-1">👤</span>
+                </Link>
+              </Button>
             )}
 
             {/* Mobile menu sheet */}
