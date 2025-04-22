@@ -70,4 +70,5 @@ export const subjects: Subject[] = [
   { id: 'parasha', name: 'פרשת-שבוע', color: 'bg-violet-100', textColor: 'text-violet-700', icon: '🕯️' },
   { id: 'friday-personal', name: 'שישי-אישי', color: 'bg-rose-100', textColor: 'text-rose-700', icon: '🌟' },
   { id: 'computers', name: 'מחשבים', color: 'bg-slate-100', textColor: 'text-slate-700', icon: '💻' },
+  { id: 'library', name: 'ספריה', color: 'bg-amber-50', textColor: 'text-amber-800', icon: '📚' },
 ]; 

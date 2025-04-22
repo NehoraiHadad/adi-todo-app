@@ -1,14 +1,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { SupabaseScheduleRecord, Subject, ScheduleData, DefaultTimeSlot } from '@/types/schedule';
 import { DayOfWeek } from '@/types';
-
-// TODO: Fetch actual subjects from a 'subjects' table if it exists
-// For now, use the mock list for validation/sanitization
-import { subjects as VALID_SUBJECTS_LIST } from '@/types/schedule';
-
-// Mock subject list for validation (consistency check)
-// Specify type for 's' to resolve implicit any
-const VALID_SUBJECT_NAMES = new Set(VALID_SUBJECTS_LIST.map((s: Subject) => s.name));
+import { fetchSubjects } from './queries';
 
 // Function to convert DayOfWeek string enum back to numeric day for DB (0=Sun)
 function dayOfWeekToDayNumber(day: DayOfWeek): number | null {
@@ -40,6 +33,10 @@ export async function saveScheduleData(scheduleData: ScheduleData) {
   // --- End Get user ID --- 
 
   console.log(`Preparing schedule data for saving (user: ${userId}):`, scheduleData);
+
+  // Fetch valid subjects from the database
+  const validSubjects = await fetchSubjects();
+  const VALID_SUBJECT_NAMES = new Set(validSubjects.map((s: Subject) => s.name));
 
   const recordsToUpsert: Omit<SupabaseScheduleRecord, 'id'>[] = [];
   const validationErrors: string[] = [];
@@ -154,6 +151,74 @@ export async function saveTimeSlots(timeSlots: DefaultTimeSlot[]) {
     return { success: true, results };
   } catch (error) {
     console.error('Error saving time slots:', error);
+    return { success: false, error };
+  }
+} 
+
+/**
+ * Saves a subject to the database (update or insert)
+ */
+export async function saveSubject(subject: Subject) {
+  console.log('Saving subject:', subject);
+  
+  try {
+    const supabase = await createClient();
+    
+    // If subject has an ID, update it, otherwise insert a new one
+    if (subject.id && subject.id.length > 10) { // Check if it's a valid UUID
+      const { error } = await supabase
+        .from('subjects')
+        .update({
+          name: subject.name,
+          color: subject.color,
+          text_color: subject.textColor,
+          icon: subject.icon,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', subject.id);
+        
+      if (error) throw error;
+      return { success: true, id: subject.id, operation: 'update' };
+    } else {
+      // Insert new subject
+      const { data, error } = await supabase
+        .from('subjects')
+        .insert({
+          name: subject.name,
+          color: subject.color,
+          text_color: subject.textColor,
+          icon: subject.icon,
+        })
+        .select('id')
+        .single();
+        
+      if (error) throw error;
+      return { success: true, id: data.id, operation: 'insert' };
+    }
+  } catch (error) {
+    console.error('Error saving subject:', error);
+    return { success: false, error };
+  }
+}
+
+/**
+ * Deletes a subject from the database
+ */
+export async function deleteSubject(id: string) {
+  console.log('Deleting subject:', id);
+  
+  try {
+    const supabase = await createClient();
+    
+    const { error } = await supabase
+      .from('subjects')
+      .delete()
+      .eq('id', id);
+      
+    if (error) throw error;
+    return { success: true, message: 'Subject deleted successfully.' };
+  } catch (error) {
+    console.error('Error deleting subject:', error);
     return { success: false, error };
   }
 } 

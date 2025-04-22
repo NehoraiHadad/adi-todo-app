@@ -5,7 +5,7 @@ import { ScheduleData, DefaultTimeSlot } from '@/types/schedule';
 import { ScheduleGrid, DayTabs } from '@/components/schedule';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Edit, Clock, RefreshCw, Settings } from 'lucide-react';
+import { Edit, Clock, RefreshCw, Settings, BookOpen } from 'lucide-react';
 import Link from 'next/link';
 
 interface ScheduleViewProps {
@@ -73,6 +73,16 @@ export default function ScheduleView({
               className="text-green-700 border-green-200 hover:bg-green-50"
             >
               <Settings className="h-4 w-4 mr-1" />
+            </Button>
+          </Link>
+          
+          <Link href="/schedule/subjects">
+            <Button 
+              variant="outline"
+              className="text-purple-700 border-purple-200 hover:bg-purple-50"
+              title="ניהול מקצועות"
+            >
+              <BookOpen className="h-4 w-4 mr-1" />
             </Button>
           </Link>
         </div>

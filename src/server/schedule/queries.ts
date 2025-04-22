@@ -22,8 +22,47 @@ function dayNumberToDayOfWeek(dayNumber: number): DayOfWeek | null {
   return mapping[dayNumber] || null;
 }
 
-// TODO: Fetch actual subjects from a 'subjects' table if it exists
-// For now, using the hardcoded list (similar to component types)
+/**
+ * Fetches subjects from the database
+ */
+export async function fetchSubjects(): Promise<Subject[]> {
+  noStore();
+  console.log('Fetching subjects from database...');
+  
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('subjects')
+      .select('*')
+      .order('name', { ascending: true });
+      
+    if (error) {
+      console.error('Error fetching subjects:', error);
+      throw new Error(`Failed to fetch subjects: ${error.message}`);
+    }
+    
+    if (!data || data.length === 0) {
+      console.warn('No subjects found in database, returning default subjects');
+      // Fallback to hardcoded defaults if no data in database
+      return MOCK_SUBJECTS;
+    }
+    
+    // Transform database records to Subject format
+    return data.map(subject => ({
+      id: subject.id,
+      name: subject.name,
+      color: subject.color,
+      textColor: subject.text_color,
+      icon: subject.icon
+    }));
+  } catch (error) {
+    console.error('Failed to fetch subjects:', error);
+    // Return hardcoded defaults as fallback
+    return MOCK_SUBJECTS;
+  }
+}
+
+// Legacy mock subjects as fallback
 const MOCK_SUBJECTS: Subject[] = [
     { id: 'english', name: 'אנגלית', color: 'bg-purple-100', textColor: 'text-purple-700', icon: '🔤' },
     { id: 'hebrew', name: 'עברית', color: 'bg-yellow-100', textColor: 'text-yellow-700', icon: '📚' },
@@ -40,10 +79,8 @@ const MOCK_SUBJECTS: Subject[] = [
     { id: 'parasha', name: 'פרשת-שבוע', color: 'bg-violet-100', textColor: 'text-violet-700', icon: '🕯️' },
     { id: 'friday-personal', name: 'שישי-אישי', color: 'bg-rose-100', textColor: 'text-rose-700', icon: '🌟' },
     { id: 'computers', name: 'מחשבים', color: 'bg-slate-100', textColor: 'text-slate-700', icon: '💻' },
+    { id: 'library', name: 'ספריה', color: 'bg-amber-50', textColor: 'text-amber-800', icon: '📚' },
 ];
-
-// Key the map by SUBJECT NAME for easier lookup from DB record
-const subjectsMapByName = new Map(MOCK_SUBJECTS.map(s => [s.name, s]));
 
 /**
  * Fetches the default time slots from Supabase.
@@ -109,14 +146,15 @@ export async function fetchProcessedScheduleData(): Promise<ScheduleData> {
   noStore(); 
   const supabase = await createClient(); 
 
-  // Fetch raw schedule records and default time slots concurrently
-  const [scheduleResponse, defaultTimeSlots] = await Promise.all([
+  // Fetch raw schedule records, default time slots, and subjects concurrently
+  const [scheduleResponse, defaultTimeSlots, subjects] = await Promise.all([
     supabase
       .from('schedules') 
       .select('*')       
       .order('day_of_week', { ascending: true })
       .order('slot_index', { ascending: true }),
-    fetchDefaultTimeSlots() // Fetch the defaults
+    fetchDefaultTimeSlots(), // Fetch the defaults
+    fetchSubjects() // Fetch subjects from database
   ]);
 
   const { data: rawData, error } = scheduleResponse;
@@ -128,6 +166,10 @@ export async function fetchProcessedScheduleData(): Promise<ScheduleData> {
 
   console.log('Raw data received:', rawData);
   console.log('Default time slots:', defaultTimeSlots);
+  console.log('Fetched subjects:', subjects);
+
+  // Create a map of subjects by name for easy lookup
+  const subjectsMapByName = new Map(subjects.map(s => [s.name, s]));
 
   // Initialize the final structure with default slots for all days
   const processedData: ScheduleData = {};

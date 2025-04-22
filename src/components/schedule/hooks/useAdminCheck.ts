@@ -5,11 +5,13 @@ import { useState, useEffect } from 'react';
  */
 export function useAdminCheck() {
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Check if user is admin
     const checkAdminStatus = async () => {
       try {
+        setIsLoading(true);
         const response = await fetch('/api/user/role');
         if (response.ok) {
           const data = await response.json();
@@ -17,11 +19,13 @@ export function useAdminCheck() {
         }
       } catch (error) {
         console.error('Error checking admin status:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
     
     checkAdminStatus();
   }, []);
 
-  return { isAdmin };
+  return { isAdmin, isLoading };
 } 
