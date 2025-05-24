@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { useAuth } from '@/context/AuthContext';
+import { UserRole } from '@/types'; // Added UserRole import
 import { 
   Avatar,
   AvatarFallback,
@@ -125,10 +126,11 @@ const UserMenu = ({ user, getUserInitials, handleSignOut, isMobile = false }: {
 );
 
 // Mobile Menu Sheet Content Component
-const MobileMenuContent = ({ isActive, handleSignOut, user }: { 
+const MobileMenuContent = ({ isActive, handleSignOut, user, userRole }: { 
   isActive: (path: string) => boolean;
   handleSignOut: () => void;
   user: UserType | null;
+  userRole: UserRole | null; // Added userRole prop
 }) => (
   <div className="flex flex-col space-y-4">
     <MobileNavLink href="/" icon="🏠" label="בית" isActive={isActive('/')} />
@@ -136,6 +138,24 @@ const MobileMenuContent = ({ isActive, handleSignOut, user }: {
     <MobileNavLink href="/tasks" icon="✏️" label="משימות" isActive={isActive('/tasks')} />
     <MobileNavLink href="/equipment" icon="🎒" label="ציוד יומי" isActive={isActive('/equipment')} />
     <MobileNavLink href="/rewards" icon="🏆" label="פרסים" isActive={isActive('/rewards')} />
+
+    {/* Role-specific dashboard links for Mobile */}
+    {user && userRole === UserRole.PARENT && (
+      <MobileNavLink
+        href="/dashboard/parent"
+        icon="👨‍👩‍👧"
+        label="לוח הורים"
+        isActive={isActive('/dashboard/parent')}
+      />
+    )}
+    {user && userRole === UserRole.TEACHER && (
+      <MobileNavLink
+        href="/dashboard/teacher"
+        icon="👩‍🏫"
+        label="לוח מורים"
+        isActive={isActive('/dashboard/teacher')}
+      />
+    )}
 
     {/* Login/Logout Button for Mobile */}
     {!user ? (
@@ -169,7 +189,7 @@ const MobileMenuContent = ({ isActive, handleSignOut, user }: {
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
-  const { user, signOut } = useAuth();
+  const { user, signOut, userRole } = useAuth(); // Added userRole
   
   const isActive = (path: string) => pathname === path;
 
@@ -237,6 +257,24 @@ export default function Navbar() {
                 />
               ))}
 
+              {/* Role-specific dashboard links for Desktop */}
+              {user && userRole === UserRole.PARENT && (
+                <DesktopNavLink
+                  href="/dashboard/parent"
+                  icon="👨‍👩‍👧"
+                  label="לוח הורים"
+                  isActive={isActive('/dashboard/parent')}
+                />
+              )}
+              {user && userRole === UserRole.TEACHER && (
+                <DesktopNavLink
+                  href="/dashboard/teacher"
+                  icon="👩‍🏫"
+                  label="לוח מורים"
+                  isActive={isActive('/dashboard/teacher')}
+                />
+              )}
+
               {/* User Profile or Login Button */}
               {user ? (
                 <UserMenu 
@@ -293,6 +331,7 @@ export default function Navbar() {
                   isActive={isActive} 
                   handleSignOut={handleSignOut} 
                   user={user} 
+                  userRole={userRole} // Pass userRole here
                 />
               </SheetContent>
             </Sheet>

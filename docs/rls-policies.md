@@ -53,21 +53,25 @@ CREATE POLICY "users_can_insert_own_tasks" ON tasks
 CREATE POLICY "users_can_view_own_or_shared_schedules" ON schedules
     FOR SELECT USING (auth.uid() = user_id OR is_shared = true);
 
--- רק מורים (או הורים) יכולים ליצור מערכות משותפות
-CREATE POLICY "admins_can_insert_shared_schedules" ON schedules
+-- רק מורים או מנהלי מערכת יכולים ליצור מערכות משותפות
+-- Policy name updated for clarity
+-- Only teachers or admins can create shared schedules
+CREATE POLICY "teacher_admin_can_insert_shared_schedules" ON schedules
     FOR INSERT WITH CHECK (
-        auth.uid() IN (SELECT user_id FROM user_roles WHERE role = 'admin')
-        OR (auth.uid() = user_id AND is_shared = false)
+        (auth.uid() IN (SELECT user_id FROM user_roles WHERE role IN ('teacher', 'admin')) AND is_shared = true)
+        OR (auth.uid() = user_id AND is_shared = false) -- Allows users to create their own non-shared schedules
     );
 
 -- משתמשים יכולים לעדכן את המערכת האישית שלהם בלבד
 CREATE POLICY "users_can_update_own_schedules" ON schedules
     FOR UPDATE USING (auth.uid() = user_id AND NOT is_shared);
 
--- רק מנהלים יכולים לעדכן מערכות משותפות
-CREATE POLICY "admins_can_update_shared_schedules" ON schedules
+-- רק מורים או מנהלי מערכת יכולים לעדכן מערכות משותפות
+-- Policy name updated for clarity
+-- Only teachers or admins can update shared schedules
+CREATE POLICY "teacher_admin_can_update_shared_schedules" ON schedules
     FOR UPDATE USING (
-        auth.uid() IN (SELECT user_id FROM user_roles WHERE role = 'admin')
+        auth.uid() IN (SELECT user_id FROM user_roles WHERE role IN ('teacher', 'admin'))
         AND is_shared
     );
 ```
@@ -79,10 +83,14 @@ CREATE POLICY "admins_can_update_shared_schedules" ON schedules
 CREATE POLICY "users_can_view_their_messages" ON parent_messages
     FOR SELECT USING (auth.uid() = user_id);
 
--- רק מנהלים (הורים/מורים) יכולים ליצור הודעות
-CREATE POLICY "admins_can_insert_messages" ON parent_messages
+-- הורים, מורים או מנהלי מערכת יכולים ליצור הודעות
+-- Policy name updated
+-- Parents, teachers, or admins can create messages
+-- Note: Further restrictions based on user relationships (e.g., parent to own child)
+-- will be required once linking mechanisms are in place.
+CREATE POLICY "privileged_can_insert_messages" ON parent_messages
     FOR INSERT WITH CHECK (
-        auth.uid() IN (SELECT user_id FROM user_roles WHERE role = 'admin')
+        auth.uid() IN (SELECT user_id FROM user_roles WHERE role IN ('parent', 'teacher', 'admin'))
     );
 
 -- משתמשים יכולים לסמן את ההודעות שלהם כנקראו

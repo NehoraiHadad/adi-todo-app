@@ -2,6 +2,7 @@ export enum UserRole {
   STUDENT = 'student',
   ADMIN = 'admin',
   PARENT = 'parent',
+  TEACHER = 'teacher',
 }
 
 export enum DayOfWeek {

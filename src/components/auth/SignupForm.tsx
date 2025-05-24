@@ -2,10 +2,12 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { UserRole } from '@/types'
 
 export default function SignupForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [role, setRole] = useState<UserRole>(UserRole.STUDENT)
   
   async function handleSubmit(formData: FormData) {
     setIsLoading(true)
@@ -51,7 +53,7 @@ export default function SignupForm() {
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, username }),
+        body: JSON.stringify({ email, password, username, role }),
       })
       
       const data = await response.json()
@@ -103,6 +105,25 @@ export default function SignupForm() {
           dir="rtl"
           minLength={6}
         />
+      </div>
+      
+      <div>
+        <label htmlFor="role" className="block text-sm font-medium mb-1 text-right">
+          תפקיד
+        </label>
+        <select
+          id="role"
+          name="role"
+          required
+          className="w-full px-3 py-2 border rounded-md text-right"
+          dir="rtl"
+          value={role}
+          onChange={(e) => setRole(e.target.value as UserRole)}
+        >
+          <option value={UserRole.STUDENT}>תלמיד/ה</option>
+          <option value={UserRole.PARENT}>הורה</option>
+          <option value={UserRole.TEACHER}>מורה</option>
+        </select>
       </div>
       
       {error && (
