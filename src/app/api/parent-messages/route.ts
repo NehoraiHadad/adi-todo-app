@@ -48,13 +48,14 @@ export async function GET(request: NextRequest) {
 // POST /api/parent-messages - Create a new parent message
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const supabase = await createClient(); // Assumes createClient is imported
     const { data: { user: senderUser }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !senderUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // UserRole should be imported: import { UserRole } from '@/types';
     const { data: senderRoleData, error: roleError } = await supabase
       .from('user_roles')
       .select('role')
@@ -90,6 +91,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Message content is required.' }, { status: 400 });
     }
 
+    // Link Verification
     if (senderRole === UserRole.PARENT) {
       const { data: linkData, error: linkFetchError } = await supabase
         .from('parent_child_links')
@@ -102,12 +104,29 @@ export async function POST(request: NextRequest) {
       if (linkFetchError || !linkData) {
         return NextResponse.json({ error: 'Forbidden: Parent not linked or link not approved with this recipient.' }, { status: 403 });
       }
+    } else if (senderRole === UserRole.TEACHER) {
+      // Verify recipient is a student in one of the teacher's classes
+      const { data: enrollmentData, error: enrollmentError } = await supabase
+        .from('student_class_enrollments AS sce')
+        .select('sce.id, c.id AS class_id')
+        .join('classes AS c', 'sce.class_id = c.id') // Corrected join syntax for Supabase JS client
+        .eq('c.teacher_id', senderUser.id) // Class taught by this teacher
+        .eq('sce.student_id', recipient_id) // Recipient is the student
+        .eq('sce.status', 'approved')       // Student is approved in the class
+        .maybeSingle(); // Use maybeSingle to check if any such enrollment exists
+
+      if (enrollmentError) {
+        console.error('Error verifying teacher-student link:', enrollmentError.message);
+        return NextResponse.json({ error: 'Failed to verify teacher-student link.' }, { status: 500 });
+      }
+      if (!enrollmentData) {
+        return NextResponse.json({ error: 'Forbidden: Recipient is not an approved student in any of your classes.' }, { status: 403 });
+      }
     }
-    // TODO: Add similar link verification if TEACHERs are sending messages to students in their class.
 
     const messageToInsert = {
       user_id: recipient_id, // user_id in table is the recipient
-      sender_id: senderUser.id, // This is the new crucial field
+      sender_id: senderUser.id,
       sender_name: senderName,
       content: content.trim(),
       is_read: false,
@@ -120,14 +139,14 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (insertError) {
-      console.error('Error creating parent message:', insertError.message);
+      console.error('Error creating message:', insertError.message);
       return NextResponse.json({ error: 'Failed to send message.' }, { status: 500 });
     }
 
     return NextResponse.json(newMessage, { status: 201 });
-  } catch (error: any) {
-    console.error('Error processing POST /api/parent-messages:', error.message);
-    if (error.name === 'SyntaxError') {
+  } catch (error: any) { // Use 'any' for the catch block error
+    console.error('Error processing request in POST /api/parent-messages:', error.message);
+    if (error.name === 'SyntaxError') { // JSON parsing error
         return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
     }
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
@@ -155,11 +174,12 @@ export async function PATCH(request: NextRequest) {
       updated_at: new Date().toISOString()
     };
     
+    // Update messages that belong to the user (as recipient)
     const { data, error } = await supabase
       .from('parent_messages')
       .update(updates)
       .in('id', body.ids)
-      .eq('user_id', user.id) // Ensures recipient can only mark their own messages as read
+      .eq('user_id', user.id) // This implies user_id is the recipient
       .select();
     
     if (error) {
