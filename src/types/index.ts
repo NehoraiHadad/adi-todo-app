@@ -54,6 +54,7 @@ export interface Task {
   subject?: string;
   type?: TaskType;
   completed?: boolean;
+  class_id?: string; // Added for class-specific tasks
   
   // Internal fields for UI
   _originalTitle?: string;

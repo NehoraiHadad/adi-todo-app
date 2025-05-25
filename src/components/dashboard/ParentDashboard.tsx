@@ -1,16 +1,25 @@
 // src/components/dashboard/ParentDashboard.tsx
 'use client';
 
-import React, { useState } from 'react'; // Added useState
+import React, { useState } from 'react';
 import LinkChildForm from '@/components/parent/LinkChildForm';
-import SelectChildView from '@/components/parent/SelectChildView'; // Import SelectChildView
-import ViewChildTasks from '@/components/parent/ViewChildTasks';   // Import ViewChildTasks
+import SelectChildView from '@/components/parent/SelectChildView';
+import ViewChildTasks from '@/components/parent/ViewChildTasks';
+import ParentMessageForm from '@/components/parent/ParentMessageForm'; // Import
+import ViewParentMessages from '@/components/parent/ViewParentMessages'; // Import
+import { useAuth } from '@/context/AuthContext'; // Import
 
 const ParentDashboard: React.FC = () => {
+  const { user: parentUser } = useAuth(); // Get current parent user
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
+  const [messageListRefreshKey, setMessageListRefreshKey] = useState<number>(0); // For refreshing message list
+
+  const handleMessageSent = () => {
+    setMessageListRefreshKey(prevKey => prevKey + 1); // Increment key to trigger refresh
+  };
 
   return (
-    <div className="space-y-8"> {/* Increased spacing */}
+    <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold mb-2">לוח הורים</h1>
         <p className="text-gray-600">ברוכים הבאים ללוח ההורים. כאן תוכלו לראות מידע על ילדכם ולשלוח הודעות.</p>
@@ -30,22 +39,31 @@ const ParentDashboard: React.FC = () => {
         <SelectChildView onChildSelected={setSelectedChildId} />
         
         {selectedChildId ? (
-          <ViewChildTasks childId={selectedChildId} />
+          <div className="mt-6 space-y-6">
+            <ViewChildTasks childId={selectedChildId} />
+            
+            {/* Messaging Section */}
+            <div className="pt-6 border-t">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                הודעות לילד/ה: {selectedChildId ? (
+                  (document.querySelector(`button[onClick*="${selectedChildId}"]`)?.textContent || 'Selected Child')
+                ) : ''}
+              </h3>
+              <ViewParentMessages 
+                selectedChildId={selectedChildId} 
+                currentParentId={parentUser?.id || null}
+                refreshKey={messageListRefreshKey} 
+              />
+              <ParentMessageForm 
+                selectedChildId={selectedChildId} 
+                onMessageSent={handleMessageSent} 
+              />
+            </div>
+          </div>
         ) : (
-          <p className="text-sm text-gray-500 mt-4">בחר/י ילד/ה מהרשימה למעלה כדי לראות את המשימות שלו/ה.</p>
+          <p className="text-sm text-gray-500 mt-4">בחר/י ילד/ה מהרשימה למעלה כדי לראות את המשימות שלו/ה ולהתכתב.</p>
         )}
       </section>
-
-      {/* 
-        TODO: Add section for sending/viewing messages with selected child.
-        This will require:
-        - A ParentMessageForm component.
-        - A ViewParentMessages component.
-        - API endpoints for sending messages (likely POST /api/parent-messages, ensuring sender_id is captured)
-          and fetching messages (e.g., GET /api/parent-messages?child_id=[childId]&parent_id=[parentId]).
-        - Updates to parent_messages table RLS and possibly schema (sender_id column).
-      */}
-      {/* Other parent dashboard content can be added here */}
     </div>
   );
 };

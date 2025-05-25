@@ -137,4 +137,96 @@ Teachers need to see data for students enrolled in their classes.
 
 ---
 Remember to apply these policies to your Supabase database. Adjust foreign key names and column names as per your exact schema.
+
+## RLS Policies for Class Tasks (`tasks` table)
+
+These policies address how students view tasks assigned to their classes and how teachers create these tasks. The `tasks` table should have a `class_id` column (UUID, nullable, references `classes.id`) and a `type` column (e.g., 'personal', 'class').
+
+### 1. Students Viewing Class Tasks
+
+Students should be able to view tasks assigned to classes they are enrolled in, in addition to their personal tasks (which are typically covered by a policy like `tasks.user_id = auth.uid()`).
+
+```sql
+-- Students can view tasks for classes they are enrolled in (approved status)
+CREATE POLICY "students_can_view_their_class_tasks" ON tasks
+    FOR SELECT USING (
+        type = 'class' AND class_id IS NOT NULL AND EXISTS (
+            SELECT 1 FROM student_class_enrollments sce
+            WHERE sce.student_id = auth.uid()
+            AND sce.class_id = tasks.class_id
+            AND sce.status = 'approved'
+        )
+    );
 ```
+*Note: This policy should be combined with existing SELECT policies on the `tasks` table. For example, if a user can see tasks where `tasks.user_id = auth.uid()`, the overall SELECT rule would be `(tasks.user_id = auth.uid()) OR (condition_for_class_tasks) OR (condition_for_shared_tasks_by_parents) etc.` Supabase combines multiple `USING` conditions for `SELECT` policies with `OR`.*
+
+### 2. Teachers Creating Class Tasks
+
+Teachers need permission to insert tasks that are designated as `type = 'class'` and linked to one of their classes via `class_id`. The `user_id` on such tasks would typically be the teacher's own ID (as the creator/assigner).
+
+The existing general policy for inserting tasks is often:
+`CREATE POLICY "users_can_insert_own_tasks" ON tasks FOR INSERT WITH CHECK (auth.uid() = user_id);`
+
+This policy needs to be either replaced with a more comprehensive one or augmented. Here's a new, more specific policy for teachers creating class tasks:
+
+```sql
+-- Teachers can create class tasks for their classes
+CREATE POLICY "teachers_can_create_class_tasks" ON tasks
+    FOR INSERT WITH CHECK (
+        ( -- Personal tasks for themselves (if they also use the system for personal tasks)
+          auth.uid() = user_id AND (type = 'personal' OR type IS NULL)
+          AND (SELECT role FROM user_roles WHERE user_id = auth.uid() AND role = 'teacher' LIMIT 1) IS NOT NULL
+        ) 
+        OR 
+        ( -- Class tasks for one of their classes
+          auth.uid() = user_id -- Task user_id is the teacher creating/assigning it
+          AND type = 'class' 
+          AND class_id IS NOT NULL
+          AND (SELECT role FROM user_roles WHERE user_id = auth.uid() AND role = 'teacher' LIMIT 1) IS NOT NULL
+          AND EXISTS ( -- Check teacher owns the class
+              SELECT 1 FROM classes c
+              WHERE c.id = tasks.class_id
+              AND c.teacher_id = auth.uid()
+          )
+        )
+    );
+```
+
+**Important Consideration for Task Insertion Policies:**
+
+If you add the `teachers_can_create_class_tasks` policy, you **must** review your existing INSERT policies for the `tasks` table.
+*   If you have a general `users_can_insert_own_tasks` policy like the one mentioned above, it might conflict or need adjustment.
+*   **Option 1 (Recommended): Modify the existing policy.**
+    If you have `users_can_insert_own_tasks`, alter it to be more comprehensive:
+    ```sql
+    /*
+    ALTER POLICY "users_can_insert_own_tasks" ON tasks
+      WITH CHECK (
+        ( -- Regular users (including students, parents) can insert personal tasks for themselves
+          auth.uid() = user_id AND (type IS NULL OR type = 'personal')
+        )
+        OR
+        ( -- Teachers can insert personal tasks OR class tasks
+          auth.uid() = user_id -- Teacher is the task owner/creator
+          AND (SELECT role FROM user_roles WHERE user_id = auth.uid() AND role = 'teacher' LIMIT 1) IS NOT NULL
+          AND (
+            (type IS NULL OR type = 'personal') -- Teacher's personal task
+            OR
+            ( -- Teacher's class task
+              type = 'class'
+              AND class_id IS NOT NULL
+              AND EXISTS (
+                  SELECT 1 FROM classes c
+                  WHERE c.id = tasks.class_id
+                  AND c.teacher_id = auth.uid()
+              )
+            )
+          )
+        )
+      );
+    */
+    ```
+*   **Option 2: Multiple Specific Policies.**
+    If you prefer separate policies, ensure the conditions are mutually exclusive or work together correctly. For instance, you might have one policy for students creating personal tasks, and `teachers_can_create_class_tasks` for teachers. Be careful that a non-teacher cannot accidentally satisfy parts of the teacher policy.
+
+For the purpose of this documentation update, the `teachers_can_create_class_tasks` policy is provided. Database administrators should carefully review and integrate this with their existing RLS setup for the `tasks` table to avoid conflicts and ensure correct permissions.
