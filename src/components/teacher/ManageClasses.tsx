@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/context/AuthContext';
-import { Task, TaskType } from '@/types'; // Ensure Task and TaskType are imported
+import { Task, TaskType } from '@/types';
+import TeacherMessageForm from '@/components/teacher/TeacherMessageForm'; // Import TeacherMessageForm
 
 interface ClassRecord {
   id: string | number;
@@ -36,6 +37,7 @@ const ManageClasses: React.FC = () => {
   const [classTasks, setClassTasks] = useState<{ [classId: string]: Task[] }>({});
   const [viewingTasksForClassId, setViewingTasksForClassId] = useState<string | number | null>(null);
   const [isLoadingClassTasks, setIsLoadingClassTasks] = useState(false);
+  const [selectedStudentForMessageId, setSelectedStudentForMessageId] = useState<string | null>(null);
 
   const fetchTeacherClasses = useCallback(async () => {
     if (!user) return;
@@ -288,9 +290,31 @@ const ManageClasses: React.FC = () => {
                             <span className="text-xs text-gray-400 ml-2">
                               (Enrolled: {new Date(student.enrolled_at).toLocaleDateString()})
                             </span>
+                            <Button
+                              variant="link"
+                              size="sm"
+                              className="text-xs text-blue-600 hover:text-blue-800 pl-2 ml-2" // Added ml-2 for spacing
+                              onClick={() => {
+                                setSelectedStudentForMessageId(student.student_id === selectedStudentForMessageId ? null : student.student_id);
+                              }}
+                            >
+                              {selectedStudentForMessageId === student.student_id ? 'Cancel Message' : 'Send Message'}
+                            </Button>
                           </li>
                         ))}
                       </ul>
+                      {/* Conditionally render message form for a specific student if selected */}
+                      {selectedStudentForMessageId && studentsInClass[cls.id]?.find(s => s.student_id === selectedStudentForMessageId) && (
+                        <div className="my-2 p-2 border-t border-gray-200"> 
+                          <TeacherMessageForm
+                            selectedStudentId={selectedStudentForMessageId}
+                            onMessageSent={() => {
+                              console.log('Message sent to student:', selectedStudentForMessageId);
+                              setSelectedStudentForMessageId(null); 
+                            }}
+                          />
+                        </div>
+                      )}
                     )}
                   </div>
                 )}
