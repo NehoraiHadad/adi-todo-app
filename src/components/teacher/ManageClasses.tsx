@@ -403,7 +403,6 @@ const ManageClasses: React.FC = () => {
       </section>
     </div>
   );
-}; // End of ManageClasses component
 
 export default ManageClasses;
 ```
