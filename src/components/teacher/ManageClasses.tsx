@@ -405,4 +405,3 @@ const ManageClasses: React.FC = () => {
   );
 
 export default ManageClasses;
-```
