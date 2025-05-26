@@ -39,8 +39,12 @@ export async function GET(request: NextRequest) {
     }
     
     return NextResponse.json(data || []);
-  } catch (error: any) {
-    console.error('Error processing GET /api/parent-messages:', error.message);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error('Error processing GET /api/parent-messages:', error.message);
+    } else {
+      console.error('Error processing GET /api/parent-messages:', String(error));
+    }
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
@@ -144,12 +148,17 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(newMessage, { status: 201 });
-  } catch (error: any) { // Use 'any' for the catch block error
-    console.error('Error processing request in POST /api/parent-messages:', error.message);
-    if (error.name === 'SyntaxError') { // JSON parsing error
-        return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  } catch (error: unknown) { 
+    if (error instanceof Error) {
+      console.error('Error processing request in POST /api/parent-messages:', error.message);
+      if (error.name === 'SyntaxError') { // JSON parsing error
+          return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+      }
+    } else {
+      console.error('Error processing request in POST /api/parent-messages:', String(error));
     }
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    // Avoid returning raw error messages for generic internal server error
+    return NextResponse.json({ error: 'Internal Server Error. Please check logs.' }, { status: 500 });
   }
 }
 
@@ -188,8 +197,12 @@ export async function PATCH(request: NextRequest) {
     }
     
     return NextResponse.json(data || []);
-  } catch (error: any) {
-    console.error('Error processing PATCH /api/parent-messages:', error.message);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error('Error processing PATCH /api/parent-messages:', error.message);
+    } else {
+      console.error('Error processing PATCH /api/parent-messages:', String(error));
+    }
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

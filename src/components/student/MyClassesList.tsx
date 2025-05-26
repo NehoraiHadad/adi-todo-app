@@ -32,8 +32,12 @@ const MyClassesList: React.FC = () => {
         throw new Error(data.error || 'Failed to fetch enrolled classes');
       }
       setEnrolledClasses(data);
-    } catch (error: any) {
-      setMessage(`Error: ${error.message}`);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setMessage(`Error: ${error.message}`);
+      } else {
+        setMessage(`Error: ${String(error)}`);
+      }
       setEnrolledClasses([]);
     } finally {
       setIsLoading(false);

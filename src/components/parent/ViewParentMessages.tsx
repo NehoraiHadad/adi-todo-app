@@ -30,8 +30,12 @@ const ViewParentMessages: React.FC<ViewParentMessagesProps> = ({ selectedChildId
       if (data.length === 0) {
         setMessageStatus('No messages in this conversation yet.');
       }
-    } catch (error: any) {
-      setMessageStatus(`Error fetching messages: ${error.message}`);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setMessageStatus(`Error fetching messages: ${error.message}`);
+      } else {
+        setMessageStatus(`Error fetching messages: ${String(error)}`);
+      }
     } finally {
       setIsLoading(false);
     }

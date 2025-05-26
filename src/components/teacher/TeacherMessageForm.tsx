@@ -47,8 +47,12 @@ const TeacherMessageForm: React.FC<TeacherMessageFormProps> = ({ selectedStudent
       if (onMessageSent) {
         onMessageSent(); 
       }
-    } catch (error: any) {
-      setMessageStatus(`Error: ${error.message}`);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setMessageStatus(`Error: ${error.message}`);
+      } else {
+        setMessageStatus(`Error: ${String(error)}`);
+      }
     } finally {
       setIsLoading(false);
       setTimeout(() => setMessageStatus(null), 5000);

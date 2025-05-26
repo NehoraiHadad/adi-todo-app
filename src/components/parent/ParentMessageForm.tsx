@@ -47,8 +47,12 @@ const ParentMessageForm: React.FC<ParentMessageFormProps> = ({ selectedChildId, 
       if (onMessageSent) {
         onMessageSent(); // Trigger callback
       }
-    } catch (error: any) {
-      setMessageStatus(`Error: ${error.message}`);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setMessageStatus(`Error: ${error.message}`);
+      } else {
+        setMessageStatus(`Error: ${String(error)}`);
+      }
     } finally {
       setIsLoading(false);
       // Optionally clear status message after a few seconds

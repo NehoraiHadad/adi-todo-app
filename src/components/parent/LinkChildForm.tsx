@@ -1,7 +1,7 @@
 // src/components/parent/LinkChildForm.tsx
 'use client';
 
-import React, { useState, useEffect, FormEvent } from 'react';
+import React, { useState, useEffect, FormEvent, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/context/AuthContext'; // To ensure user is authenticated client-side
@@ -23,7 +23,7 @@ const LinkChildForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingRequests, setIsFetchingRequests] = useState(false);
 
-  const fetchSentRequests = async () => {
+  const fetchSentRequests = useCallback(async () => {
     if (!user) return; // Should not happen if component is on a protected page
     setIsFetchingRequests(true);
     setMessage('');
@@ -34,27 +34,34 @@ const LinkChildForm: React.FC = () => {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to fetch sent requests');
       }
-      const data = await response.json();
+      const data: Array<{ id: string | number; child_id: string; status: 'pending' | 'approved' | 'rejected' | string; created_at: string; child_profile?: { username?: string }; child?: { username?: string } }> = await response.json();
       // Assuming API returns child's username directly or nested profile
       // For now, structure matches ChildLinkRequest
-      setRequests(data.map((req: any) => ({
-        ...req,
-        child_username: req.child_profile?.username || req.child?.username || 'N/A' 
+      setRequests(data.map((req) => ({
+        id: req.id,
+        child_id: req.child_id,
+        status: req.status,
+        created_at: req.created_at,
+        child_username: req.child_profile?.username || req.child?.username || req.child_id || 'N/A' 
       })));
-    } catch (error: any) {
-      setMessage(`Error fetching requests: ${error.message}`);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setMessage(`Error fetching requests: ${error.message}`);
+      } else {
+        setMessage(`Error fetching requests: ${String(error)}`);
+      }
       // Set requests to empty array on error to avoid rendering stale data
       setRequests([]);
     } finally {
       setIsFetchingRequests(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     if (user) { // Ensure user is available before fetching
       fetchSentRequests();
     }
-  }, [user]); // Refetch if user changes
+  }, [user, fetchSentRequests]); // Refetch if user changes
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -81,8 +88,12 @@ const LinkChildForm: React.FC = () => {
       setMessage(responseData.message || 'Link request sent successfully!');
       setChildUsername(''); // Clear input
       fetchSentRequests(); // Refresh the list
-    } catch (error: any) {
-      setMessage(`Error: ${error.message}`);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setMessage(`Error: ${error.message}`);
+      } else {
+        setMessage(`Error: ${String(error)}`);
+      }
     } finally {
       setIsLoading(false);
     }

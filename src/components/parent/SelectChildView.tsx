@@ -44,8 +44,12 @@ const SelectChildView: React.FC<SelectChildViewProps> = ({ onChildSelected }) =>
       if (approvedChildren.length === 0) {
         setMessage('You have no approved links with children yet. Please add a child and wait for their approval.');
       }
-    } catch (error: any) {
-      setMessage(`Error: ${error.message}`);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setMessage(`Error: ${error.message}`);
+      } else {
+        setMessage(`Error: ${String(error)}`);
+      }
       setLinkedChildren([]);
     } finally {
       setIsLoading(false);

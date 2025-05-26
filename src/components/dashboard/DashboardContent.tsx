@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createItem, deleteItem } from '@/app/dashboard/actions'
-import ManageLinkRequests from '@/components/student/ManageLinkRequests'; // Import the new component
 
 type Item = {
   id: string
@@ -145,4 +144,4 @@ export default function DashboardContent({ items }: DashboardContentProps) {
       </div>
     </div>
   )
-} 
+}

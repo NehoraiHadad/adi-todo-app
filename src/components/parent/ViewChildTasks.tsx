@@ -28,8 +28,12 @@ const ViewChildTasks: React.FC<ViewChildTasksProps> = ({ childId }) => {
       if (data.length === 0) {
         setMessage('No tasks found for this child.');
       }
-    } catch (error: any) {
-      setMessage(`Error: ${error.message}`);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setMessage(`Error: ${error.message}`);
+      } else {
+        setMessage(`Error: ${String(error)}`);
+      }
     } finally {
       setIsLoading(false);
     }

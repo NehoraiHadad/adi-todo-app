@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/context/AuthContext';
-import { Task, TaskType } from '@/types'; // TaskType might be unused now, TBD
+import { Task } from '@/types'; // TaskType might be unused now, TBD
 import TeacherMessageForm from '@/components/teacher/TeacherMessageForm';
 
 interface ClassRecord {
@@ -61,8 +61,12 @@ const ManageClasses: React.FC = () => {
         throw new Error(data.error || 'Failed to fetch classes');
       }
       setClasses(data as ClassRecord[]);
-    } catch (error: any) {
-      setMessage(`Error fetching classes: ${error.message}`);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setMessage(`Error fetching classes: ${error.message}`);
+      } else {
+        setMessage(`Error fetching classes: ${String(error)}`);
+      }
       setClasses([]);
     } finally {
       setIsLoadingFetch(false);
@@ -94,8 +98,12 @@ const ManageClasses: React.FC = () => {
       setMessage(responseData.message || 'Class created successfully!');
       setNewClassName('');
       fetchTeacherClasses();
-    } catch (error: any) {
-      setMessage(`Error creating class: ${error.message}`);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setMessage(`Error creating class: ${error.message}`);
+      } else {
+        setMessage(`Error creating class: ${String(error)}`);
+      }
     } finally {
       setIsLoadingCreate(false);
     }
@@ -123,8 +131,12 @@ const ManageClasses: React.FC = () => {
         throw new Error(data.error || `Failed to fetch students for class ${classId}`);
       }
       setStudentsInClass(prev => ({ ...prev, [classId]: data as StudentEnrollmentInfo[] }));
-    } catch (error: any) {
-      setMessage(`Error fetching students: ${error.message}`);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setMessage(`Error fetching students: ${error.message}`);
+      } else {
+        setMessage(`Error fetching students: ${String(error)}`);
+      }
       setViewingStudentsForClassId(null);
     } finally {
       setIsLoadingStudents(false);
@@ -173,8 +185,12 @@ const ManageClasses: React.FC = () => {
       }
       setMessage('Class task created successfully!');
       setAddingTaskToClassId(null);
-    } catch (error: any) {
-      setMessage(`Error creating task: ${error.message}`);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setMessage(`Error creating task: ${error.message}`);
+      } else {
+        setMessage(`Error creating task: ${String(error)}`);
+      }
     } finally {
       setIsCreatingTask(false);
     }
@@ -201,8 +217,12 @@ const ManageClasses: React.FC = () => {
         throw new Error(data.error || `Failed to fetch tasks for class ${classId}`);
       }
       setClassTasks(prev => ({ ...prev, [classId]: data as Task[] }));
-    } catch (error: any) {
-      setMessage(`Error fetching class tasks: ${error.message}`);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setMessage(`Error fetching class tasks: ${error.message}`);
+      } else {
+        setMessage(`Error fetching class tasks: ${String(error)}`);
+      }
       setViewingTasksForClassId(null);
     } finally {
       setIsLoadingClassTasks(false);
@@ -403,5 +423,6 @@ const ManageClasses: React.FC = () => {
       </section>
     </div>
   );
+};
 
 export default ManageClasses;

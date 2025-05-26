@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { UserRole } from '@/types';
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   const supabase = await createClient();
 
   // 1. Get authenticated user

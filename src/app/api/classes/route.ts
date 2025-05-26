@@ -14,7 +14,7 @@ function generateClassCode(length: number = 6): string {
 }
 
 // GET Handler for fetching teacher's classes
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   const supabase = await createClient();
 
   // 1. Get authenticated user
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     className = body.name;
-  } catch (e) {
+  } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 

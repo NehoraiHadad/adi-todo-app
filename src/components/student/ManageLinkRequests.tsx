@@ -36,8 +36,12 @@ const ManageLinkRequests: React.FC = () => {
       }
       const data = await response.json();
       setPendingRequests(data);
-    } catch (error: any) {
-      setMessage(`Error fetching requests: ${error.message}`);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setMessage(`Error fetching requests: ${error.message}`);
+      } else {
+        setMessage(`Error fetching requests: ${String(error)}`);
+      }
       setPendingRequests([]); // Clear requests on error
     } finally {
       setIsFetchingRequests(false);
@@ -65,8 +69,12 @@ const ManageLinkRequests: React.FC = () => {
       setMessage(responseData.message || `Request ${action} successfully.`);
       // Refresh list: filter out the processed request
       setPendingRequests(prev => prev.filter(req => req.id !== linkId));
-    } catch (error: any) {
-      setMessage(`Error: ${error.message}`);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setMessage(`Error: ${error.message}`);
+      } else {
+        setMessage(`Error: ${String(error)}`);
+      }
     } finally {
       setIsLoading(false);
     }

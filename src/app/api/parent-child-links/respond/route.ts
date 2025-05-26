@@ -19,7 +19,7 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     linkId = body.link_id;
     action = body.action;
-  } catch (e) {
+  } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 

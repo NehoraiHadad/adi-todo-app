@@ -36,8 +36,12 @@ const JoinClassForm: React.FC = () => {
       setMessage(responseData.message || 'Successfully joined class!');
       setClassCode(''); // Clear input
       // Optionally, trigger a refresh of student's class list if displayed nearby
-    } catch (error: any) {
-      setMessage(`Error: ${error.message}`);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setMessage(`Error: ${error.message}`);
+      } else {
+        setMessage('An unknown error occurred');
+      }
     } finally {
       setIsLoading(false);
     }

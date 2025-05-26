@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     classCode = body.class_code;
-  } catch (e) {
+  } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 

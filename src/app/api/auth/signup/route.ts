@@ -52,8 +52,12 @@ export async function POST(request: NextRequest) {
           console.error('Failed to create profile:', profileError.message);
           // Depending on policy, might want to return error here
         }
-      } catch (profileCatchError: any) {
-        console.error('Exception during profile creation:', profileCatchError.message);
+      } catch (profileCatchError: unknown) {
+        if (profileCatchError instanceof Error) {
+          console.error('Exception during profile creation:', profileCatchError.message);
+        } else {
+          console.error('Exception during profile creation:', String(profileCatchError));
+        }
       }
 
       // 2. Insert into user_roles table
@@ -77,8 +81,12 @@ export async function POST(request: NextRequest) {
             { status: 500 } 
           );
         }
-      } catch (roleCatchError: any) {
-        console.error('Exception during user_roles insertion:', roleCatchError.message);
+      } catch (roleCatchError: unknown) {
+        if (roleCatchError instanceof Error) {
+          console.error('Exception during user_roles insertion:', roleCatchError.message);
+        } else {
+          console.error('Exception during user_roles insertion:', String(roleCatchError));
+        }
         return NextResponse.json(
             { error: 'User signed up but encountered an exception assigning role. Please contact support.' },
             { status: 500 }
@@ -90,8 +98,12 @@ export async function POST(request: NextRequest) {
       { data }, // Contains user session information
       { status: 200 }
     )
-  } catch (error: any) {
-    console.error('Error during sign up:', error.message);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error('Error during sign up:', error.message);
+    } else {
+      console.error('Error during sign up:', String(error));
+    }
     return NextResponse.json(
       { error: 'An unexpected error occurred during signup.' },
       { status: 500 }
