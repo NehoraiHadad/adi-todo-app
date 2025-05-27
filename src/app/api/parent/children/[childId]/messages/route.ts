@@ -3,15 +3,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { UserRole } from '@/types';
 
-interface RouteParams {
-  params: {
-    childId: string;
-  };
-}
-
-export async function GET(request: NextRequest, { params }: RouteParams) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function GET(request: NextRequest, context: any) {
   const supabase = await createClient();
-  const { childId } = params;
+  const childId = (context.params as { childId: string }).childId;
 
   if (!childId) {
     return NextResponse.json({ error: 'Child ID is required.' }, { status: 400 });

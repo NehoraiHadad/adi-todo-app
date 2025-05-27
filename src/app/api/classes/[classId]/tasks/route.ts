@@ -3,15 +3,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { UserRole, TaskType } from '@/types';
 
-interface RouteParams {
-  params: {
-    classId: string;
-  };
-}
-
-export async function GET(request: NextRequest, { params }: RouteParams) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function GET(request: NextRequest, context: any) {
   const supabase = await createClient();
-  const { classId } = params;
+  const classId = (context.params as { classId: string }).classId;
 
   if (!classId) {
     return NextResponse.json({ error: 'Class ID is required.' }, { status: 400 });
