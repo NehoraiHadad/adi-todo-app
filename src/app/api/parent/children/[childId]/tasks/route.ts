@@ -60,3 +60,5 @@ export async function GET(request: NextRequest, context: any) {
 
   return NextResponse.json(tasks || [], { status: 200 });
 }
+
+// Trigger Vercel build
