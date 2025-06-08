@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(newMessage, { status: 201 });
-  } catch (error: unknown) { 
+  } catch (error: unknown) {
     if (error instanceof Error) {
       console.error('Error processing request in POST /api/parent-messages:', error.message);
       if (error.name === 'SyntaxError') { // JSON parsing error

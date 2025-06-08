@@ -35,14 +35,14 @@ export default function DashboardContent({ items }: DashboardContentProps) {
     e.preventDefault()
     setLoading(true)
     setError(null)
-    
+
     try {
       const formData = new FormData()
       formData.append('title', title)
       formData.append('description', description)
-      
+
       const result = await createItem(formData)
-      
+
       if (result.error) {
         setError(result.error)
       } else {
@@ -61,10 +61,10 @@ export default function DashboardContent({ items }: DashboardContentProps) {
   // Handle item deletion using server action
   const handleDeleteItem = async (itemId: string) => {
     setLoading(true)
-    
+
     try {
       const result = await deleteItem(itemId)
-      
+
       if (result.error) {
         setError(result.error)
       } else {

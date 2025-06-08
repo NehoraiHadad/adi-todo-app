@@ -42,7 +42,7 @@ const LinkChildForm: React.FC = () => {
         child_id: req.child_id,
         status: req.status,
         created_at: req.created_at,
-        child_username: req.child_profile?.username || req.child?.username || req.child_id || 'N/A' 
+        child_username: req.child_profile?.username || req.child?.username || req.child_id || 'N/A'
       })));
     } catch (error: unknown) {
       if (error instanceof Error) {
