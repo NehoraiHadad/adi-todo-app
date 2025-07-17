@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import SignOutButton from '@/components/SignOutButton';
+import ChangePasswordDialog from '@/components/auth/ChangePasswordDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,6 +30,7 @@ export default function ProfileContent({ initialProfile }: ProfileContentProps) 
   const [editingEmail, setEditingEmail] = useState(false);
   const [email, setEmail] = useState(initialProfile?.email || user?.email || '');
   const [savingEmail, setSavingEmail] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   const handleUpdateEmail = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,7 +73,17 @@ export default function ProfileContent({ initialProfile }: ProfileContentProps) 
     }
   };
 
+  const handlePasswordChangeSuccess = () => {
+    toast.success('הסיסמה שונתה בהצלחה!');
+  };
+
   return (
+    <>
+      <ChangePasswordDialog 
+        isOpen={changePasswordOpen} 
+        onClose={() => setChangePasswordOpen(false)}
+        onSuccess={handlePasswordChangeSuccess}
+      />
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
         <CardTitle className="text-2xl font-bold text-center">הפרופיל שלי</CardTitle>
@@ -148,7 +160,14 @@ export default function ProfileContent({ initialProfile }: ProfileContentProps) 
               </p>
             </div>
             
-            <div className="pt-4 flex justify-center">
+            <div className="pt-4 flex justify-center gap-4">
+              <Button 
+                variant="outline" 
+                onClick={() => setChangePasswordOpen(true)}
+                className="text-blue-600 border-blue-200 hover:bg-blue-50"
+              >
+                שינוי סיסמה
+              </Button>
               <SignOutButton variant="outline" className="text-red-500 border-red-200 hover:bg-red-50" />
             </div>
           </>
@@ -159,5 +178,6 @@ export default function ProfileContent({ initialProfile }: ProfileContentProps) 
         )}
       </CardContent>
     </Card>
+    </>
   );
 } 

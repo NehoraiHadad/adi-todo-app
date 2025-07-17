@@ -4,11 +4,18 @@ import { createClient } from '@/utils/supabase/server'
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
-    const { current_password, new_password } = await request.json()
+    const { current_password, new_password, confirm_password } = await request.json()
 
-    if (!current_password || !new_password) {
+    if (!current_password || !new_password || !confirm_password) {
       return NextResponse.json(
-        { error: 'נדרשת סיסמה נוכחית וסיסמה חדשה' },
+        { error: 'נדרשת סיסמה נוכחית, סיסמה חדשה ואישור סיסמה' },
+        { status: 400 }
+      )
+    }
+
+    if (new_password !== confirm_password) {
+      return NextResponse.json(
+        { error: 'הסיסמה החדשה ואישור הסיסמה אינם זהים' },
         { status: 400 }
       )
     }
@@ -16,6 +23,13 @@ export async function POST(request: NextRequest) {
     if (new_password.length < 6) {
       return NextResponse.json(
         { error: 'הסיסמה החדשה חייבת להכיל לפחות 6 תווים' },
+        { status: 400 }
+      )
+    }
+
+    if (current_password === new_password) {
+      return NextResponse.json(
+        { error: 'הסיסמה החדשה חייבת להיות שונה מהסיסמה הנוכחית' },
         { status: 400 }
       )
     }
@@ -30,8 +44,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Create a new client instance for password verification
+    const verifySupabase = await createClient()
+    
     // Verify current password by attempting to sign in
-    const { error: signInError } = await supabase.auth.signInWithPassword({
+    const { error: signInError } = await verifySupabase.auth.signInWithPassword({
       email: user.email!,
       password: current_password
     })
@@ -49,8 +66,9 @@ export async function POST(request: NextRequest) {
     })
 
     if (updateError) {
+      console.error('Password update error:', updateError)
       return NextResponse.json(
-        { error: 'שגיאה בעדכון הסיסמה' },
+        { error: 'שגיאה בעדכון הסיסמה: ' + updateError.message },
         { status: 500 }
       )
     }

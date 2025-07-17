@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { Eye, EyeOff, Key, AlertCircle } from 'lucide-react'
+import { Eye, EyeOff, Key, AlertCircle, CheckCircle2 } from 'lucide-react'
 
 interface ChangePasswordDialogProps {
   isOpen: boolean
@@ -20,10 +20,26 @@ export default function ChangePasswordDialog({ isOpen, onClose, onSuccess }: Cha
   const [showPasswords, setShowPasswords] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+
+    if (!currentPassword) {
+      setError('נדרשת סיסמה נוכחית')
+      return
+    }
+
+    if (!newPassword) {
+      setError('נדרשת סיסמה חדשה')
+      return
+    }
+
+    if (!confirmPassword) {
+      setError('נדרש אימות סיסמה חדשה')
+      return
+    }
 
     if (newPassword !== confirmPassword) {
       setError('הסיסמאות החדשות אינן תואמות')
@@ -35,6 +51,11 @@ export default function ChangePasswordDialog({ isOpen, onClose, onSuccess }: Cha
       return
     }
 
+    if (currentPassword === newPassword) {
+      setError('הסיסמה החדשה חייבת להיות שונה מהסיסמה הנוכחית')
+      return
+    }
+
     setIsLoading(true)
 
     try {
@@ -43,16 +64,20 @@ export default function ChangePasswordDialog({ isOpen, onClose, onSuccess }: Cha
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           current_password: currentPassword,
-          new_password: newPassword
+          new_password: newPassword,
+          confirm_password: confirmPassword
         })
       })
 
       const data = await response.json()
 
       if (data.success) {
-        onSuccess()
-        onClose()
-        resetForm()
+        setSuccess(true)
+        setTimeout(() => {
+          onSuccess()
+          onClose()
+          resetForm()
+        }, 1500)
       } else {
         setError(data.error || 'שגיאה בשינוי הסיסמה')
       }
@@ -68,6 +93,7 @@ export default function ChangePasswordDialog({ isOpen, onClose, onSuccess }: Cha
     setNewPassword('')
     setConfirmPassword('')
     setError(null)
+    setSuccess(false)
   }
 
   const handleClose = () => {
@@ -90,6 +116,13 @@ export default function ChangePasswordDialog({ isOpen, onClose, onSuccess }: Cha
             <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-red-500" />
               <span className="text-sm text-red-700">{error}</span>
+            </div>
+          )}
+          
+          {success && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-green-500" />
+              <span className="text-sm text-green-700">הסיסמה שונתה בהצלחה!</span>
             </div>
           )}
 
@@ -141,11 +174,11 @@ export default function ChangePasswordDialog({ isOpen, onClose, onSuccess }: Cha
           </div>
 
           <DialogFooter className="gap-2">
-            <Button type="button" variant="outline" onClick={handleClose}>
+            <Button type="button" variant="outline" onClick={handleClose} disabled={isLoading}>
               ביטול
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'משנה...' : 'שנה סיסמה'}
+            <Button type="submit" disabled={isLoading || success}>
+              {isLoading ? 'משנה...' : success ? 'שונה בהצלחה' : 'שנה סיסמה'}
             </Button>
           </DialogFooter>
         </form>
