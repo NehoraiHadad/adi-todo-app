@@ -133,7 +133,7 @@ export default function AdminDashboard({ userInfo }: AdminDashboardProps) {
 
   useEffect(() => {
     fetchAdminData()
-  }, [])
+  }, [fetchAdminData])
 
   const formatTimeAgo = (dateString: string): string => {
     const date = new Date(dateString)

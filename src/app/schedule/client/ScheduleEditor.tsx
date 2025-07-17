@@ -13,8 +13,13 @@ interface ScheduleEditorProps {
   initialSelectedDay: DayOfWeek;
   isTimeEditingMode: boolean;
   onCancel: () => void;
-  permissions?: any; // Add permissions prop
-  scheduleType?: any; // Add scheduleType prop
+  permissions?: {
+    canView: boolean;
+    canEdit: boolean;
+    canCreate: boolean;
+    canDelete: boolean;
+  };
+  scheduleType?: 'personal' | 'class';
   classId?: string; // Add classId prop
 }
 
@@ -27,6 +32,9 @@ export default function ScheduleEditor({
   initialSelectedDay,
   isTimeEditingMode,
   onCancel,
+  permissions: _permissions,
+  scheduleType: _scheduleType,
+  classId: _classId,
 }: ScheduleEditorProps) {
   // --- State Management ---
   const [schedule, setSchedule] = useState<ScheduleData>(initialSchedule);

@@ -16,8 +16,13 @@ interface ScheduleViewProps {
   onEdit: () => void; // Function to switch to edit mode
   onEditTimes: () => void; // Function to switch to time edit mode
   onRefresh: () => void; // Add onRefresh prop
-  permissions?: any; // Add permissions prop
-  scheduleType?: any; // Add scheduleType prop
+  permissions?: {
+    canView: boolean;
+    canEdit: boolean;
+    canCreate: boolean;
+    canDelete: boolean;
+  };
+  scheduleType?: 'personal' | 'class';
   classId?: string; // Add classId prop
 }
 
@@ -31,7 +36,10 @@ export default function ScheduleView({
   isAdmin,
   onEdit,
   onEditTimes,
-  onRefresh // Destructure onRefresh prop
+  onRefresh,
+  permissions: _permissions,
+  scheduleType: _scheduleType,
+  classId: _classId
 }: ScheduleViewProps) {
   // Selected day state is managed here for view mode
   const [selectedDay, setSelectedDay] = useState<DayOfWeek>(initialSelectedDay);

@@ -4,7 +4,6 @@ import {
     Subject, 
     ScheduleData,
     DefaultTimeSlot,
-    ScheduleType,
     SchedulePermissions,
     ClassScheduleOptions
 } from '@/types/schedule';
@@ -171,12 +170,15 @@ export async function fetchProcessedScheduleData(): Promise<ScheduleData> {
 
   console.log('Fetching schedule for user:', user.id);
 
-  // Check if user is admin
+  // Note: checking user role for potential future use
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
     .eq('id', user.id)
     .single();
+  
+  // profile is available but currently unused - may be needed for admin logic later
+  console.log('User profile fetched for potential admin logic:', profile?.role);
 
   // Build query based on user role
   let query = supabase

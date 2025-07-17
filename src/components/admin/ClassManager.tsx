@@ -739,7 +739,7 @@ export default function ClassManager() {
                     <div className="text-sm font-medium text-gray-600">
                       רמה: {cls.grade}
                     </div>
-                    {cls.class_students?.filter(s => s.is_active).length > 0 ? (
+                    {cls.class_students && cls.class_students.filter(s => s.is_active).length > 0 ? (
                       <div className="space-y-1">
                         {cls.class_students
                           .filter(s => s.is_active)
@@ -752,9 +752,9 @@ export default function ClassManager() {
                               </span>
                             </div>
                           ))}
-                        {cls.class_students.filter(s => s.is_active).length > 3 && (
+                        {cls.class_students && cls.class_students.filter(s => s.is_active).length > 3 && (
                           <div className="text-xs text-gray-500">
-                            ועוד {cls.class_students.filter(s => s.is_active).length - 3} תלמידים...
+                            ועוד {cls.class_students ? cls.class_students.filter(s => s.is_active).length - 3 : 0} תלמידים...
                           </div>
                         )}
                       </div>
