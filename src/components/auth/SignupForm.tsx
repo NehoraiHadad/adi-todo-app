@@ -13,11 +13,11 @@ export default function SignupForm() {
     
     try {
       // Get form data
-      const username = formData.get('username') as string
+      const email = formData.get('email') as string
       const password = formData.get('password') as string
       
       // Perform simple client-side validation
-      if (!username || !password) {
+      if (!email || !password) {
         throw new Error('יש למלא את כל השדות')
       }
       
@@ -25,33 +25,17 @@ export default function SignupForm() {
         throw new Error('הסיסמה חייבת להכיל לפחות 6 תווים')
       }
       
-      // Create a valid email from username for Supabase using the same method as in signIn
-      const generateValidEmail = (username: string): string => {
-        // First create a base64 encoding of the original username to preserve uniqueness
-        // This ensures even Hebrew or non-Latin usernames get a unique identifier
-        const uniqueId = btoa(encodeURIComponent(username.trim()))
-          .replace(/[+/=]/g, '')
-          .substring(0, 10);
-        
-        // Clean the username to ensure it works as an email (fallback for display)
-        const sanitizedUsername = username.toLowerCase().replace(/[^a-z0-9]/g, '') || 'user';
-        
-        // Ensure minimum length for the display part
-        const displayPart = sanitizedUsername.length < 3 
-          ? sanitizedUsername + '123' 
-          : sanitizedUsername;
-        
-        // Combine both parts to ensure uniqueness while maintaining readability
-        return `${displayPart}-${uniqueId}@gmail.com`;
-      };
-      
-      const email = generateValidEmail(username);
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(email)) {
+        throw new Error('כתובת האימייל אינה תקינה')
+      }
       
       // Send registration request
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, username }),
+        body: JSON.stringify({ email, password }),
       })
       
       const data = await response.json()
@@ -73,18 +57,18 @@ export default function SignupForm() {
   return (
     <form action={handleSubmit} className="space-y-4 rtl">
       <div>
-        <label htmlFor="username" className="block text-sm font-medium mb-1 text-right">
-          שם משתמש
+        <label htmlFor="email" className="block text-sm font-medium mb-1 text-right">
+          אימייל
         </label>
         <input
-          id="username"
-          name="username"
-          type="text"
-          autoComplete="username"
+          id="email"
+          name="email"
+          type="email"
+          autoComplete="email"
           required
           className="w-full px-3 py-2 border rounded-md text-right"
-          placeholder="בחרו שם משתמש"
-          dir="rtl"
+          placeholder="הכניסו כתובת אימייל"
+          dir="ltr"
         />
       </div>
       

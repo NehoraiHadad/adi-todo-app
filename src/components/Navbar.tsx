@@ -205,7 +205,7 @@ export default function Navbar() {
   
   // Navigation links data
   const navLinks = [
-    { href: '/', icon: '🏠', label: 'בית' },
+    { href: '/dashboard', icon: '🏠', label: 'בית' },
     { href: '/schedule', icon: '📅', label: 'מערכת לימודים' },
     { href: '/tasks', icon: '✏️', label: 'משימות' },
     { href: '/equipment', icon: '🎒', label: 'ציוד יומי' },

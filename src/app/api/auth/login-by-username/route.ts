@@ -17,7 +17,7 @@ export async function POST(request: Request) {
   try {
     const { username, password } = await request.json();
     
-    console.log(`Login attempt for username: ${username}`);
+    console.log(`Login attempt for username: ${username} with password length: ${password.length}`);
     
     if (!username || !password) {
       return NextResponse.json(
@@ -78,12 +78,36 @@ export async function POST(request: Request) {
       console.log('Direct login failed, trying profile lookup', directLoginError);
     }
     
-    // If direct login failed, try looking up the user in profiles
-    const { data: profileData, error: profileError } = await supabase
+    // If direct login failed, try looking up the user in profiles by username first, then display_name
+    let profileData = null;
+    let profileError = null;
+
+    // First try by username
+    console.log('Searching for user by username:', username);
+    const { data: usernameData, error: usernameError } = await supabase
       .from('profiles')
-      .select('id')
-      .eq('display_name', username)
+      .select('id, email, username, display_name')
+      .eq('username', username)
       .single();
+
+    console.log('Username search result:', { data: usernameData, error: usernameError });
+
+    if (!usernameError && usernameData) {
+      profileData = usernameData;
+    } else {
+      // If username lookup failed, try by display_name
+      console.log('Username not found, trying display_name:', username);
+      const { data: displayData, error: displayError } = await supabase
+        .from('profiles')
+        .select('id, email, username, display_name')
+        .eq('display_name', username)
+        .single();
+      
+      console.log('Display name search result:', { data: displayData, error: displayError });
+      
+      profileData = displayData;
+      profileError = displayError;
+    }
       
     if (profileError || !profileData) {
       console.log('Profile lookup failed:', profileError);
@@ -95,7 +119,44 @@ export async function POST(request: Request) {
     
     console.log(`Found profile with ID: ${profileData.id}`);
     
-    // Try to get the user's email from the user_emails view
+    // If we found the email directly in the profile, use it
+    if (profileData.email) {
+      console.log(`Using email from profile: "${profileData.email}"`);
+      console.log(`Profile found:`, profileData);
+      console.log(`Attempting login with email: "${profileData.email}" and password length: ${password.length}`);
+      
+      // Sign in with the email from profile
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: profileData.email,
+        password
+      });
+      
+      if (error) {
+        console.log('Login with profile email failed:', error);
+        return NextResponse.json(
+          { error: 'שם המשתמש או הסיסמה שגויים' },
+          { status: 401 }
+        );
+      }
+      
+      // Set the auth cookie
+      const authCookie = data.session?.access_token;
+      if (authCookie) {
+        const cookieStore = await cookies();
+        cookieStore.set({
+          name: 'sb-access-token',
+          value: authCookie,
+          path: '/',
+          maxAge: 60 * 60 * 24 * 7, // 1 week
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production'
+        });
+      }
+      
+      return NextResponse.json({ success: true }, { status: 200 });
+    }
+    
+    // Fallback: Try to get the user's email from the user_emails view
     try {
       const { data: userData, error: userError } = await supabase
         .from('user_emails')
@@ -108,7 +169,7 @@ export async function POST(request: Request) {
         throw new Error('Could not find email for user');
       }
       
-      console.log(`Found email: ${userData.email}`);
+      console.log(`Found email from view: ${userData.email}`);
       
       // Now sign in with the email
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -119,7 +180,7 @@ export async function POST(request: Request) {
       if (error) {
         console.log('Login with retrieved email failed:', error);
         return NextResponse.json(
-          { error: 'Invalid username or password' },
+          { error: 'שם המשתמש או הסיסמה שגויים' },
           { status: 401 }
         );
       }
@@ -158,7 +219,7 @@ export async function POST(request: Request) {
         if (error) {
           console.log('Fallback login failed:', error);
           return NextResponse.json(
-            { error: 'Invalid username or password' },
+            { error: 'שם המשתמש או הסיסמה שגויים' },
             { status: 401 }
           );
         }
@@ -181,7 +242,7 @@ export async function POST(request: Request) {
       } catch (fallbackErr) {
         console.log('Fallback login error:', fallbackErr);
         return NextResponse.json(
-          { error: 'Invalid username or password' },
+          { error: 'שם המשתמש או הסיסמה שגויים' },
           { status: 401 }
         );
       }

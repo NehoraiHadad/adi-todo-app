@@ -3,11 +3,11 @@ import { createClient } from '@/utils/supabase/server'
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, username } = await request.json()
+    const { email, password } = await request.json()
     
-    if (!email || !password || !username) {
+    if (!email || !password) {
       return NextResponse.json(
-        { error: 'Email, password, and username are required' },
+        { error: 'Email and password are required' },
         { status: 400 }
       )
     }
@@ -17,11 +17,6 @@ export async function POST(request: NextRequest) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: {
-          display_name: username,
-        },
-      },
     })
     
     if (error) {
@@ -32,26 +27,39 @@ export async function POST(request: NextRequest) {
     }
     
     if (data.user) {
-      // Create profile
+      // Create profile and user role
       try {
+        // Create profile with default role
         const { error: profileError } = await supabase
           .from('profiles')
           .insert({
             id: data.user.id,
-            username,
             email: data.user.email,
+            role: 'child', // Default role
           })
           
         if (profileError) {
           console.error('Failed to create profile:', profileError)
         }
-      } catch (profileError) {
-        console.error('Failed to create profile:', profileError)
+
+        // Create user role
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .insert({
+            user_id: data.user.id,
+            role: 'child', // Default role
+          })
+          
+        if (roleError) {
+          console.error('Failed to create user role:', roleError)
+        }
+      } catch (error) {
+        console.error('Failed to create profile and user role:', error)
       }
     }
     
     return NextResponse.json(
-      { data },
+      { success: true, data },
       { status: 200 }
     )
   } catch (error) {

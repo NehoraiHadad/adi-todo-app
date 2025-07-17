@@ -3,12 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev -p 3010",
+    "dev:turbo": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "debug:profiles": "node debug-profiles.js",
+    "debug:profiles:ts": "npx tsx debug-profiles.ts"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

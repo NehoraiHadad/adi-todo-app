@@ -1,6 +1,6 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
-import LoginForm from '@/components/auth/LoginForm'
+import MultiRoleLogin from '@/components/auth/MultiRoleLogin'
 
 export default async function LoginPage() {
   const supabase = await createClient()
@@ -10,17 +10,8 @@ export default async function LoginPage() {
   
   // If logged in, redirect to dashboard
   if (data.user && !error) {
-    redirect('/dashboard')
+    redirect('/')
   }
   
-  return (
-    <div className="flex min-h-screen flex-col items-center justify-center py-2">
-      <div className="w-full max-w-md">
-        <div className="rounded-lg border bg-card p-8 shadow-sm">
-          <h1 className="mb-6 text-2xl font-bold text-center">ברוכים הבאים</h1>
-          <LoginForm />
-        </div>
-      </div>
-    </div>
-  )
+  return <MultiRoleLogin />
 } 

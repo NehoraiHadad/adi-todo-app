@@ -1,7 +1,7 @@
 import { createClient } from '@/utils/supabase/server';
-import { SupabaseScheduleRecord, Subject, ScheduleData, DefaultTimeSlot } from '@/types/schedule';
+import { SupabaseScheduleRecord, Subject, ScheduleData, DefaultTimeSlot, ScheduleType } from '@/types/schedule';
 import { DayOfWeek } from '@/types';
-import { fetchSubjects } from './queries';
+import { fetchSubjects, fetchSchedulePermissions } from './queries';
 
 // Function to convert DayOfWeek string enum back to numeric day for DB (0=Sun)
 function dayOfWeekToDayNumber(day: DayOfWeek): number | null {
@@ -20,7 +20,7 @@ function dayOfWeekToDayNumber(day: DayOfWeek): number | null {
 /**
  * Saves the complete schedule data (structured as ScheduleData) to Supabase.
  */
-export async function saveScheduleData(scheduleData: ScheduleData) {
+export async function saveScheduleData(scheduleData: ScheduleData, classId?: string) {
   const supabase = await createClient();
   
   // --- Get current user ID --- 
@@ -32,7 +32,16 @@ export async function saveScheduleData(scheduleData: ScheduleData) {
   const userId = user.id;
   // --- End Get user ID --- 
 
-  console.log(`Preparing schedule data for saving (user: ${userId}):`, scheduleData);
+  // Check permissions if saving to class schedule
+  if (classId) {
+    const permissions = await fetchSchedulePermissions(classId);
+    if (!permissions.canEdit) {
+      throw new Error('אין לך הרשאה לערוך את מערכת השעות של כיתה זו');
+    }
+  }
+
+  const scheduleType = classId ? ScheduleType.CLASS : ScheduleType.PERSONAL;
+  console.log(`Preparing schedule data for saving (user: ${userId}, type: ${scheduleType}, class: ${classId || 'N/A'}):`, scheduleData);
 
   // Fetch valid subjects from the database
   const validSubjects = await fetchSubjects();
@@ -61,12 +70,15 @@ export async function saveScheduleData(scheduleData: ScheduleData) {
         // TODO: Add validation for startTime and endTime format if needed (Zod handles basic format)
 
         recordsToUpsert.push({
-          user_id: userId, // Include the user ID
+          user_id: classId ? undefined : userId, // For class schedules, user_id can be undefined
           day_of_week: dayNumber,
           slot_index: slotIndex, 
           subject: subjectName, 
           start_time: `${slot.startTime}:00`, 
-          end_time: `${slot.endTime}:00`,     
+          end_time: `${slot.endTime}:00`,
+          class_id: classId || undefined,
+          schedule_type: scheduleType,
+          created_by: userId,
         });
       });
     }
@@ -86,10 +98,16 @@ export async function saveScheduleData(scheduleData: ScheduleData) {
 
   // Perform the upsert operation
   console.log('Upserting schedule records:', recordsToUpsert);
+  
+  // Define conflict columns based on schedule type
+  const conflictColumns = classId 
+    ? 'class_id, day_of_week, slot_index, schedule_type'
+    : 'user_id, day_of_week, slot_index, schedule_type';
+  
   const { error } = await supabase
     .from('schedules')
     .upsert(recordsToUpsert, {
-      onConflict: 'user_id, day_of_week, slot_index', 
+      onConflict: conflictColumns, 
       ignoreDuplicates: false, 
     });
 

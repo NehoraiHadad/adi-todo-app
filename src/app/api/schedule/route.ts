@@ -1,5 +1,11 @@
 import { NextResponse } from 'next/server';
-import { fetchProcessedScheduleData, fetchDefaultTimeSlots } from '@/server/schedule/queries';
+import { 
+  fetchProcessedScheduleData, 
+  fetchDefaultTimeSlots, 
+  fetchClassScheduleData, 
+  fetchAvailableClasses, 
+  fetchSchedulePermissions 
+} from '@/server/schedule/queries';
 import { saveScheduleData } from '@/server/schedule/mutations';
 import { z } from 'zod';
 import { DayOfWeek } from '@/types';
@@ -45,17 +51,54 @@ function serverSideValidate(_scheduleData: SchedulePatchData): { isValid: boolea
 
 /**
  * GET handler to fetch processed schedule data and default time slots.
+ * Supports query parameters: ?classId=xxx to fetch class schedule
  */
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    // Fetch processed schedule data (includes specific times) and default time slots
-    const [scheduleData, defaultTimeSlots] = await Promise.all([
-      fetchProcessedScheduleData(), // Use the new function
-      fetchDefaultTimeSlots() 
+    const url = new URL(request.url);
+    const classId = url.searchParams.get('classId');
+    
+    console.log('=== API GET /schedule called ===');
+    console.log('URL:', url.toString());
+    console.log('classId parameter:', classId);
+
+    // If classId is provided, fetch class schedule
+    if (classId) {
+      console.log('Fetching class schedule for classId:', classId);
+      const [classScheduleData, defaultTimeSlots, availableClasses, permissions] = await Promise.all([
+        fetchClassScheduleData(classId),
+        fetchDefaultTimeSlots(),
+        fetchAvailableClasses(),
+        fetchSchedulePermissions(classId)
+      ]);
+
+      return NextResponse.json({ 
+        schedule: classScheduleData, 
+        defaultTimeSlots,
+        availableClasses,
+        permissions,
+        scheduleType: 'class',
+        classId
+      });
+    }
+
+    // Fetch personal schedule data and available classes
+    console.log('Fetching personal schedule data (no classId)');
+    const [scheduleData, defaultTimeSlots, availableClasses, permissions] = await Promise.all([
+      fetchProcessedScheduleData(),
+      fetchDefaultTimeSlots(),
+      fetchAvailableClasses(),
+      fetchSchedulePermissions()
     ]);
 
     // Return the schedule (now with specific times) and the default timeslots
-    return NextResponse.json({ schedule: scheduleData, defaultTimeSlots });
+    return NextResponse.json({ 
+      schedule: scheduleData, 
+      defaultTimeSlots, 
+      availableClasses,
+      permissions,
+      scheduleType: 'personal'
+    });
 
   } catch (error: unknown) { // Changed 'any' to 'unknown'
     console.error('[API /schedule GET] Error:', error);
@@ -70,9 +113,12 @@ export async function GET() {
 
 /**
  * PATCH handler to save updated schedule data.
+ * Supports query parameters: ?classId=xxx to save class schedule
  */
 export async function PATCH(request: Request) {
   try {
+    const url = new URL(request.url);
+    const classId = url.searchParams.get('classId');
     const requestBody = await request.json();
 
     // 1. Validate against the NEW schema
@@ -98,7 +144,7 @@ export async function PATCH(request: Request) {
     }
 
     // Call the server-side mutation function (needs to accept ScheduleData)
-    const result = await saveScheduleData(structuredScheduleData); // Pass the validated new structure
+    const result = await saveScheduleData(structuredScheduleData, classId || undefined); // Pass the validated new structure
 
     if (result.success) {
       return NextResponse.json({ message: result.message });

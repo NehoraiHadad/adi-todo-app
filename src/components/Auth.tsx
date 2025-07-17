@@ -8,31 +8,13 @@ import { useAuth } from '@/context/AuthContext';
 
 const AuthComponent: React.FC = () => {
   const [view, setView] = useState<'sign_in' | 'sign_up'>('sign_in');
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const { signIn, signUp } = useAuth();
   
-  // Generate a valid email for Supabase that will pass validation
-  const generateValidEmail = (username: string): string => {
-    // First create a base64 encoding of the original username to preserve uniqueness
-    // This ensures even Hebrew or non-Latin usernames get a unique identifier
-    const uniqueId = btoa(encodeURIComponent(username.trim())).replace(/[+/=]/g, '').substring(0, 10);
-    
-    // Clean the username to ensure it works as an email (fallback for display)
-    const sanitizedUsername = username.toLowerCase().replace(/[^a-z0-9]/g, '') || 'user';
-    
-    // Ensure minimum length for the display part
-    const displayPart = sanitizedUsername.length < 3 
-      ? sanitizedUsername + '123' 
-      : sanitizedUsername;
-    
-    // Combine both parts to ensure uniqueness while maintaining readability
-    // Use gmail.com domain which is always considered valid
-    return `${displayPart}-${uniqueId}@gmail.com`;
-  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -40,22 +22,22 @@ const AuthComponent: React.FC = () => {
     setError(null);
 
     try {
-      if (!username.trim()) {
-        throw new Error('Username cannot be empty');
+      if (!email.trim()) {
+        throw new Error('Email cannot be empty');
       }
 
       if (password.length < 6) {
         throw new Error('Password must be at least 6 characters');
       }
 
-      // Store the original username (can be in Hebrew)
-      const originalUsername = username.trim();
-      
-      // Generate email consistently for both signup and login
-      const email = generateValidEmail(originalUsername);
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(email)) {
+        throw new Error('כתובת האימייל אינה תקינה')
+      }
       
       if (view === 'sign_up') {
-        const { error: signUpError } = await signUp(email, password, originalUsername);
+        const { error: signUpError } = await signUp(email, password);
         
         if (signUpError) {
           console.error('Signup error:', signUpError);
@@ -78,7 +60,7 @@ const AuthComponent: React.FC = () => {
         
         if (signInError) {
           console.error('Login error:', signInError);
-          throw new Error('שם משתמש או סיסמה שגויים');
+          throw new Error('אימייל או סיסמה שגויים');
         }
         
         // Redirect to home
@@ -107,16 +89,17 @@ const AuthComponent: React.FC = () => {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="username" className="block">שם משתמש</Label>
+            <Label htmlFor="email" className="block">אימייל</Label>
             <Input
-              id="username"
-              type="text"
-              placeholder="הזינו את שם המשתמש שלכם"
-              value={username}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
+              id="email"
+              type="email"
+              placeholder="הזינו את כתובת האימייל שלכם"
+              value={email}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
               required
-              className="rtl:text-right w-full"
-              autoComplete="username"
+              className="ltr:text-left w-full"
+              autoComplete="email"
+              dir="ltr"
             />
           </div>
           <div className="space-y-2">

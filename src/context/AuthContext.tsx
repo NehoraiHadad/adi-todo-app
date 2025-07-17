@@ -4,19 +4,39 @@ import React, { createContext, useCallback, useContext, useEffect, useState, Sus
 import { Session, User } from '@supabase/supabase-js';
 import { createClient } from '@/utils/supabase/client';
 import { usePathname, useSearchParams } from 'next/navigation';
+import { UserRole, Profile, UserWithRelationships, Class } from '@/types';
+import { getChildrenForParent, getParentsForChild, getClassesForTeacher } from '@/utils/supabase/relationships';
 
-// This defines what our auth system can do
+/**
+ * Authentication context type definition
+ * Provides authentication state and methods for the entire application
+ */
 type AuthContextType = {
+  /** Current authenticated user from Supabase Auth */
   user: User | null;
+  /** Current session object */
   session: Session | null;
+  /** User profile with extended information */
+  profile: Profile | null;
+  /** User role in the system */
+  userRole: UserRole | null;
+  /** User with relationship data (children/parents/classes) */
+  userWithRelationships: UserWithRelationships | null;
+  /** Loading state indicator */
   loading: boolean;
+  /** Sign in with email and password */
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, username: string) => Promise<{ 
+  /** Sign up new user with email and password */
+  signUp: (email: string, password: string) => Promise<{ 
     error: Error | null, 
     data: { user?: User | null } | null 
   }>;
+  /** Sign out current user */
   signOut: () => Promise<void>;
+  /** Refresh current session */
   refreshSession: () => Promise<Session | null>;
+  /** Refresh user profile and relationships */
+  refreshProfile: () => Promise<void>;
 };
 
 // Create a special box to store our login information
@@ -51,25 +71,148 @@ const AuthProviderWithSearchParams = ({
   return <>{children}</>;
 };
 
-// This is the main login system that keeps track of who is logged in
+/**
+ * Main authentication provider component
+ * Manages authentication state and provides context to child components
+ */
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [userWithRelationships, setUserWithRelationships] = useState<UserWithRelationships | null>(null);
   const [loading, setLoading] = useState(true);
   const [supabaseClient] = useState(() => createClient());
 
-  // Get the latest login information
+  /**
+   * Fetches user relationships based on their role
+   * @param userId - The user ID
+   * @param role - The user's role
+   * @param profile - The user's profile data
+   */
+  const fetchUserRelationships = useCallback(async (userId: string, role: UserRole, profile: Profile) => {
+    try {
+      const baseUser = {
+        id: userId,
+        full_name: profile.display_name,
+        email: profile.email || '',
+        role: role,
+        assigned_editor: false
+      };
+
+      let relationshipData: UserWithRelationships = baseUser;
+
+      switch (role) {
+        case UserRole.PARENT:
+          const children = await getChildrenForParent(userId);
+          relationshipData = { ...baseUser, children: children || [] };
+          break;
+
+        case UserRole.CHILD:
+          const parents = await getParentsForChild(userId);
+          relationshipData = { ...baseUser, parents: parents || [] };
+          break;
+
+        case UserRole.TEACHER:
+          const classes = await getClassesForTeacher(userId);
+          relationshipData = { ...baseUser, classes: (classes as unknown as Class[]) || [] };
+          break;
+
+        case UserRole.ADMIN:
+          // Admins don't need relationship data
+          break;
+      }
+
+      setUserWithRelationships(relationshipData);
+    } catch (error) {
+      console.error('Error fetching user relationships:', error);
+    }
+  }, []);
+
+  /**
+   * Fetches user profile and role from database
+   * @param userId - The user ID to fetch profile for
+   */
+  const fetchUserProfile = useCallback(async (userId: string) => {
+    try {
+      // Get user profile
+      const { data: profileData, error: profileError } = await supabaseClient
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+        return;
+      }
+
+      // Get user role
+      const { data: roleData, error: roleError } = await supabaseClient
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .single();
+
+      if (roleError) {
+        console.error('Error fetching role:', roleError);
+        return;
+      }
+
+      setProfile(profileData);
+      setUserRole(roleData.role as UserRole);
+
+      // Fetch relationships based on role
+      await fetchUserRelationships(userId, roleData.role as UserRole, profileData);
+    } catch (error) {
+      console.error('Error in fetchUserProfile:', error);
+    }
+  }, [supabaseClient, fetchUserRelationships]);
+
+  /**
+   * Refreshes user profile and relationship data
+   */
+  const refreshProfile = async () => {
+    if (user?.id) {
+      await fetchUserProfile(user.id);
+    }
+  };
+
+  /**
+   * Refreshes the current session and user data
+   * @returns Promise resolving to the session object
+   */
   const refreshSession = useCallback(async () => {
-    const { data } = await supabaseClient.auth.getSession();
-    setSession(data.session);
-    setUser(data.session?.user ?? null);
-    return data.session;
-  }, [supabaseClient]);
+    try {
+      const { data } = await supabaseClient.auth.getSession();
+      setSession(data.session);
+      const sessionUser = data.session?.user ?? null;
+      setUser(sessionUser);
+      
+      // If user exists, fetch their profile and relationships
+      if (sessionUser?.id) {
+        await fetchUserProfile(sessionUser.id);
+      } else {
+        // Clear user data if no session
+        setProfile(null);
+        setUserRole(null);
+        setUserWithRelationships(null);
+      }
+      
+      return data.session;
+    } catch (error) {
+      console.error('Error refreshing session:', error);
+      return null;
+    }
+  }, [supabaseClient, fetchUserProfile]);
 
   // Callback for when path or search params change
   const handlePathChange = useCallback((_pathname: string, _searchParams: URLSearchParams) => {
-    refreshSession();
-  }, [refreshSession]);
+    // Only refresh session if we don't have a session or user
+    if (!session || !user) {
+      refreshSession();
+    }
+  }, [refreshSession, session, user]);
 
   // This helps a user log in to their account
   const signIn = async (email: string, password: string) => {
@@ -98,7 +241,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // This helps a new user create an account
-  const signUp = async (email: string, password: string, username: string) => {
+  const signUp = async (email: string, password: string) => {
     try {
       // Ask the server to create a new account
       const response = await fetch('/api/auth/signup', {
@@ -106,7 +249,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password, username }),
+        body: JSON.stringify({ email, password }),
       });
       
       const result = await response.json();
@@ -125,7 +268,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // This helps a user log out of their account
+  /**
+   * Signs out the current user and clears all session data
+   */
   const signOut = async () => {
     try {
       // Ask the server to log the user out
@@ -137,9 +282,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Failed to sign out');
       }
       
-      // Clear who is logged in
+      // Clear all user data
       setUser(null);
       setSession(null);
+      setProfile(null);
+      setUserRole(null);
+      setUserWithRelationships(null);
       
       // Go back to the login page
       window.location.href = '/login';
@@ -177,10 +325,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             await refreshSession();
           }
           
-          // Clear information when a user logs out
+          // Clear all information when a user logs out
           if (event === 'SIGNED_OUT') {
             setUser(null);
             setSession(null);
+            setProfile(null);
+            setUserRole(null);
+            setUserWithRelationships(null);
           }
         }
       );
@@ -199,11 +350,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const value = {
     user,
     session,
+    profile,
+    userRole,
+    userWithRelationships,
     loading,
     signIn,
     signUp,
     signOut,
     refreshSession,
+    refreshProfile,
   };
 
   return (

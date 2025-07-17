@@ -13,6 +13,9 @@ interface ScheduleEditorProps {
   initialSelectedDay: DayOfWeek;
   isTimeEditingMode: boolean;
   onCancel: () => void;
+  permissions?: any; // Add permissions prop
+  scheduleType?: any; // Add scheduleType prop
+  classId?: string; // Add classId prop
 }
 
 /**

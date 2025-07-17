@@ -9,7 +9,7 @@ type SchedulePayload = ScheduleData;
 // TODO: Add TimeSlot save logic if needed
 
 interface UseSaveScheduleMutationReturn {
-  trigger: (scheduleData: SchedulePayload) => Promise<void>; // Function to call to save
+  trigger: (scheduleData: SchedulePayload, classId?: string) => Promise<void>; // Function to call to save
   isSaving: boolean;
   error: Error | null;
 }
@@ -20,12 +20,13 @@ export function useSaveScheduleMutation(): UseSaveScheduleMutationReturn {
   const { mutate } = useSWRConfig();
 
   const trigger = useCallback(
-    async (scheduleData: SchedulePayload) => {
+    async (scheduleData: SchedulePayload, classId?: string) => {
       setIsSaving(true);
       setError(null);
       try {
-        console.log('Triggering save mutation with (new structure):', scheduleData);
-        const response = await fetch('/api/schedule', {
+        console.log('Triggering save mutation with (new structure):', scheduleData, 'for class:', classId);
+        const url = classId ? `/api/schedule?classId=${classId}` : '/api/schedule';
+        const response = await fetch(url, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(scheduleData),
@@ -44,7 +45,8 @@ export function useSaveScheduleMutation(): UseSaveScheduleMutationReturn {
 
         // Success: Invalidate the cache for the GET endpoint
         console.log('Save successful, mutating SWR cache...');
-        await mutate('/api/schedule'); 
+        const cacheKey = classId ? `/api/schedule?classId=${classId}` : '/api/schedule';
+        await mutate(cacheKey); 
         // No need to return data, SWR will handle re-fetch
 
       } catch (err: unknown) {

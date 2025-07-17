@@ -50,7 +50,31 @@ export interface SupabaseScheduleRecord {
   start_time: string; // e.g., "08:00:00"
   end_time: string; // e.g., "08:45:00"
   subject: string | null; // Use the subject name directly as in DB logs
+  class_id?: string; // Class ID for class schedules
+  schedule_type: 'personal' | 'class'; // Type of schedule
+  created_by?: string; // Who created the schedule
   // Add other fields like created_at, updated_at if needed
+}
+
+// Enum for schedule types
+export enum ScheduleType {
+  PERSONAL = 'personal',
+  CLASS = 'class'
+}
+
+// Interface for schedule permissions
+export interface SchedulePermissions {
+  canView: boolean;
+  canEdit: boolean;
+  canCreate: boolean;
+  canDelete: boolean;
+}
+
+// Interface for class schedule view options
+export interface ClassScheduleOptions {
+  classId: string;
+  className: string;
+  canEdit: boolean;
 }
 
 // Static list of Subjects (used for validation and UI selection)

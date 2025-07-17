@@ -7,6 +7,7 @@ import {
   getCurrentHebrewDay,
   useAdminCheck
 } from '@/components/schedule';
+import { ClassSelector } from '@/components/schedule/ClassSelector';
 import { Spinner } from '@/components/ui/Spinner';
 import useSWR from 'swr'; // Import SWR
 import ScheduleView from './client/ScheduleView'; // Import View component
@@ -23,14 +24,16 @@ const fetcher = (url: string) => fetch(url).then(res => {
 });
 
 /**
- * Main Schedule page component - Refactored
+ * Main Schedule page component - Refactored with Class Support
  */
 export default function SchedulePage() {
   // selectedDay state is only used to initialize children
   const [selectedDay] = useState<DayOfWeek>(getCurrentHebrewDay());
+  const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
 
-  // Fetch data using SWR
-  const { data, error, isLoading, mutate } = useSWR('/api/schedule', fetcher);
+  // Fetch data using SWR with dynamic URL based on class selection
+  const apiUrl = selectedClassId ? `/api/schedule?classId=${selectedClassId}` : '/api/schedule';
+  const { data, error, isLoading, mutate } = useSWR(apiUrl, fetcher);
 
   // Admin check and editing state remain
   const { isAdmin } = useAdminCheck();
@@ -69,17 +72,29 @@ export default function SchedulePage() {
       return null; // Or a different loading/empty state
   }
 
-  // Extracted schedule and default timeslots from SWR data
-  const { schedule, defaultTimeSlots } = data;
+  // Extracted schedule and related data from SWR data
+  const { schedule, defaultTimeSlots, availableClasses = [], permissions, scheduleType } = data;
 
-  // Callbacks to switch modes
+  // Handler for class change
+  const handleClassChange = (classId: string | null) => {
+    setSelectedClassId(classId);
+    // Reset editing mode when switching classes
+    setIsEditing(false);
+    setIsTimeEditing(false);
+  };
+
+  // Callbacks to switch modes (only if user has edit permissions)
   const handleEnterEditMode = () => {
-      setIsTimeEditing(false);
-      setIsEditing(true);
+      if (permissions?.canEdit) {
+        setIsTimeEditing(false);
+        setIsEditing(true);
+      }
   }
   const handleEnterTimeEditMode = () => {
-      setIsEditing(false);
-      setIsTimeEditing(true);
+      if (isAdmin) { // Only admin can edit time slots
+        setIsEditing(false);
+        setIsTimeEditing(true);
+      }
   }
   const handleExitEditMode = () => {
       setIsEditing(false);
@@ -89,13 +104,25 @@ export default function SchedulePage() {
 
   return (
     <div className="container-app py-2 sm:py-6 print:py-0">
-      {/* Header section can be simplified or moved */}
+      {/* Header section */}
       <div className="flex justify-between items-center mb-2 sm:mb-6 print:hidden">
         <h1 className="text-lg sm:text-3xl font-bold text-indigo-600 text-right mb-0">
           <span className="hidden sm:inline">מערכת לימודים שבועית</span>
           <span className="sm:hidden">מערכת לימודים</span>
         </h1>
       </div>
+
+      {/* Class Selector */}
+      {availableClasses.length > 0 && (
+        <div className="mb-4 print:hidden">
+          <ClassSelector
+            selectedClassId={selectedClassId || undefined}
+            onClassChange={handleClassChange}
+            availableClasses={availableClasses}
+            showPersonalOption={true}
+          />
+        </div>
+      )}
       
       {/* Render View or Editor based on state */}
       { !isEditing && !isTimeEditing ? (
@@ -107,6 +134,9 @@ export default function SchedulePage() {
             onEdit={handleEnterEditMode}
             onEditTimes={handleEnterTimeEditMode}
             onRefresh={handleRefreshData}
+            permissions={permissions}
+            scheduleType={scheduleType}
+            classId={selectedClassId || undefined}
           />
       ) : (
           <ScheduleEditor
@@ -115,6 +145,9 @@ export default function SchedulePage() {
             initialSelectedDay={selectedDay}
             isTimeEditingMode={isTimeEditing}
             onCancel={handleExitEditMode}
+            permissions={permissions}
+            scheduleType={scheduleType}
+            classId={selectedClassId || undefined}
           />
       )}
       

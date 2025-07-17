@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from('parent_messages')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('parent_id', user.id)
       .order('created_at', { ascending: false });
     
     // Filter by read status if requested
@@ -60,9 +60,9 @@ export async function POST(request: NextRequest) {
     
     const body = await request.json();
     
-    // Message must have a recipient user_id
-    if (!body.user_id) {
-      return NextResponse.json({ error: 'Recipient user_id is required' }, { status: 400 });
+    // Message must have a recipient parent_id
+    if (!body.parent_id) {
+      return NextResponse.json({ error: 'Recipient parent_id is required' }, { status: 400 });
     }
     
     // Create the message
@@ -108,8 +108,7 @@ export async function PATCH(request: NextRequest) {
     
     // Only allow updating is_read status
     const updates = {
-      is_read: body.is_read !== undefined ? body.is_read : true,
-      updated_at: new Date().toISOString()
+      is_read: body.is_read !== undefined ? body.is_read : true
     };
     
     // Update messages that belong to the user
@@ -117,7 +116,7 @@ export async function PATCH(request: NextRequest) {
       .from('parent_messages')
       .update(updates)
       .in('id', body.ids)
-      .eq('user_id', user.id)
+      .eq('parent_id', user.id)
       .select();
     
     if (error) {

@@ -28,18 +28,18 @@ export default function LoginForm() {
   return (
     <form action={handleSubmit} className="space-y-4 rtl">
       <div>
-        <label htmlFor="username" className="block text-sm font-medium mb-1 text-right">
-          שם משתמש
+        <label htmlFor="email" className="block text-sm font-medium mb-1 text-right">
+          אימייל
         </label>
         <input
-          id="username"
-          name="username"
-          type="text"
-          autoComplete="username"
+          id="email"
+          name="email"
+          type="email"
+          autoComplete="email"
           required
           className="w-full px-3 py-2 border rounded-md text-right"
-          placeholder="הקלידו את שם המשתמש שלכם"
-          dir="rtl"
+          placeholder="הקלידו את כתובת האימייל שלכם"
+          dir="ltr"
         />
       </div>
 

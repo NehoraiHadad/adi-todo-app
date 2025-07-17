@@ -5,6 +5,7 @@ export { default as ScheduleItem } from './ScheduleItem';
 export { default as SubjectModal } from './SubjectModal';
 export { default as TodaySchedule } from './TodaySchedule';
 export { default as MobileNavDrawer } from './MobileNavDrawer';
+export { ClassSelector } from './ClassSelector';
 
 // Export types and utilities
 export * from '@/types/schedule';

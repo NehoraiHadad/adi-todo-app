@@ -16,6 +16,9 @@ interface ScheduleViewProps {
   onEdit: () => void; // Function to switch to edit mode
   onEditTimes: () => void; // Function to switch to time edit mode
   onRefresh: () => void; // Add onRefresh prop
+  permissions?: any; // Add permissions prop
+  scheduleType?: any; // Add scheduleType prop
+  classId?: string; // Add classId prop
 }
 
 /**

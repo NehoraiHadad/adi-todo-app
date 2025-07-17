@@ -6,68 +6,23 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 export async function signIn(formData: FormData) {
-  const username = formData.get('username') as string
+  const email = formData.get('email') as string
   const password = formData.get('password') as string
 
-  if (!username || !password) {
-    return { error: 'שם משתמש וסיסמה נדרשים' }
+  if (!email || !password) {
+    return { error: 'אימייל וסיסמה נדרשים' }
   }
 
   const supabase = await createActionClient()
 
-  // Generate a valid email using the improved method with Base64 encoding
-  const generateValidEmail = (username: string): string => {
-    // First create a base64 encoding of the original username to preserve uniqueness
-    // This ensures even Hebrew or non-Latin usernames get a unique identifier
-    const uniqueId = Buffer.from(encodeURIComponent(username.trim())).toString('base64')
-      .replace(/[+/=]/g, '').substring(0, 10);
-    
-    // Clean the username to ensure it works as an email (fallback for display)
-    const sanitizedUsername = username.toLowerCase().replace(/[^a-z0-9]/g, '') || 'user';
-    
-    // Ensure minimum length for the display part
-    const displayPart = sanitizedUsername.length < 3 
-      ? sanitizedUsername + '123' 
-      : sanitizedUsername;
-    
-    // Combine both parts to ensure uniqueness while maintaining readability
-    return `${displayPart}-${uniqueId}@gmail.com`;
-  };
-
-  const email = generateValidEmail(username);
-
-  // Try sign in with the generated email
+  // Direct sign in with email
   const { error } = await supabase.auth.signInWithPassword({
     email,
     password,
   })
 
   if (error) {
-    // If direct login fails, try to find the user's email from profiles
-    try {
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, email')
-        .eq('username', username)
-        .single()
-        
-      if (profileError || !profileData?.email) {
-        return { error: 'שם משתמש או סיסמה שגויים' }
-      }
-      
-      // Try login with the stored email
-      const { error: loginError } = await supabase.auth.signInWithPassword({
-        email: profileData.email,
-        password
-      })
-      
-      if (loginError) {
-        return { error: 'שם משתמש או סיסמה שגויים' }
-      }
-    } catch (err) {
-      console.error('Error during fallback authentication:', err);
-      return { error: 'שם משתמש או סיסמה שגויים' }
-    }
+    return { error: 'אימייל או סיסמה שגויים' }
   }
 
   // Force a revalidation of the entire layout to update auth state everywhere

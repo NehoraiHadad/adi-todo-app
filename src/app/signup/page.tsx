@@ -10,7 +10,7 @@ export default async function SignupPage() {
   
   // If logged in, redirect to dashboard
   if (data.user && !error) {
-    redirect('/dashboard')
+    redirect('/')
   }
   
   return (
