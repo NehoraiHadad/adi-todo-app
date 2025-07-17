@@ -2,11 +2,14 @@ import AdminSetupSimple from '@/components/auth/AdminSetupSimple'
 import { getServiceSupabase } from '@/utils/supabase/service-client'
 import { redirect } from 'next/navigation'
 
+// Force dynamic rendering to avoid pre-rendering issues
+export const dynamic = 'force-dynamic'
+
 export default async function AdminSetupPage() {
   // Check if admin users already exist
-  const serviceSupabase = getServiceSupabase()
-  
   try {
+    const serviceSupabase = getServiceSupabase()
+    
     const { data: adminUsers, error } = await serviceSupabase
       .from('user_roles')
       .select('user_id')

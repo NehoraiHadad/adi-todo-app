@@ -3,6 +3,9 @@ import ClassManager from '@/components/admin/ClassManager'
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 
+// Force dynamic rendering to avoid pre-rendering issues
+export const dynamic = 'force-dynamic'
+
 const LoadingFallback = () => (
   <div className="p-8 text-center">
     <div className="animate-pulse">טוען...</div>

@@ -2,6 +2,9 @@ import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import AdminReports from '@/components/admin/AdminReports'
 
+// Force dynamic rendering to avoid pre-rendering issues
+export const dynamic = 'force-dynamic'
+
 export default async function AdminReportsPage() {
   const supabase = await createClient()
   
